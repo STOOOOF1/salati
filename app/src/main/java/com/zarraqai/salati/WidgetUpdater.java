@@ -89,9 +89,16 @@ public final class WidgetUpdater {
         v.setChronometer(R.id.prevChrono, nowEl - since, null, true);
         v.setChronometerCountDown(R.id.prevChrono, false);
 
-        v.setTextViewText(R.id.iqLabel, "إقامة " + s.iqamaName);
-        countdown(v, R.id.iqChrono, s.iqamaTarget, nowMs, nowEl);
-        v.setTextColor(R.id.iqChrono, s.iqamaIsForCurrent() ? gold : text);
+        if (s.iqamaActive()) {
+            v.setTextViewText(R.id.iqLabel, "إقامة " + s.previous.name);
+            countdown(v, R.id.iqChrono, s.previous.iqama, nowMs, nowEl);
+            v.setTextColor(R.id.iqChrono, gold);
+        } else {
+            // قبل الأذان: لا عدّ، تظهر مدة الإقامة بعد الأذان فقط
+            v.setTextViewText(R.id.iqLabel, small ? "إقامة " + s.next.name : "إقامة " + s.next.name + " بعد الأذان");
+            v.setChronometer(R.id.iqChrono, nowEl, "+" + s.iqamaMinutesNext() + " د", false);
+            v.setTextColor(R.id.iqChrono, muted);
+        }
 
         if (!small) {
             String hijri = DateFormat.getDateInstance(DateFormat.LONG,

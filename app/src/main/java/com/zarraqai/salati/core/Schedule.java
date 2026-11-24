@@ -114,6 +114,16 @@ public final class Schedule {
     public Duration untilIqama() { return Duration.between(now, iqamaTarget); }
     public boolean iqamaIsForCurrent() { return previous != null && iqamaTarget.equals(previous.iqama); }
 
+    /** عدّ الإقامة يبدأ عند الأذان وينتهي عند الإقامة. */
+    public boolean iqamaActive() {
+        return previous != null && !now.isBefore(previous.adhan) && now.isBefore(previous.iqama);
+    }
+
+    /** دقائق الإقامة بعد أذان الصلاة القادمة (تُعرض قبل الأذان بدل العدّ). */
+    public long iqamaMinutesNext() {
+        return Duration.between(next.adhan, next.iqama).toMinutes();
+    }
+
     /** الوقت الباقي من الصلاة الحالية، أو null إن لم يكن هناك وقت قائم. */
     public Duration currentRemaining() {
         return current == null ? null : Duration.between(now, current.end);

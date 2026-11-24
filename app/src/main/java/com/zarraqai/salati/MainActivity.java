@@ -127,10 +127,17 @@ public class MainActivity extends Activity {
         tvPrev.setText(Schedule.fmt(s.sincePrevious()));
         tvPrevAt.setText("أُذّن " + s.previous.adhan.format(TIME));
 
-        tvIqamaLabel.setText("إقامة " + s.iqamaName + " بعد");
-        tvIqamaAt.setText("عند " + s.iqamaTarget.format(TIME));
-        tvIqama.setText(Schedule.fmt(s.untilIqama()));
-        tvIqama.setTextColor(s.iqamaIsForCurrent() ? colorGold : colorText);
+        if (s.iqamaActive()) {
+            tvIqamaLabel.setText("إقامة " + s.previous.name + " بعد");
+            tvIqamaAt.setText("عند " + s.previous.iqama.format(TIME));
+            tvIqama.setText(Schedule.fmt(s.untilIqama()));
+            tvIqama.setTextColor(colorGold);
+        } else {
+            tvIqamaLabel.setText("إقامة " + s.next.name);
+            tvIqamaAt.setText("يبدأ العدّ عند الأذان • " + s.next.iqama.format(TIME));
+            tvIqama.setText("+" + s.iqamaMinutesNext() + " د");
+            tvIqama.setTextColor(colorMuted);
+        }
 
         renderTimes(s);
     }
