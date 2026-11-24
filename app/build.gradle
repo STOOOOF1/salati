@@ -10,8 +10,8 @@ android {
         applicationId 'com.zarraqai.salati'
         minSdk 26
         targetSdk 35
-        versionCode 5
-        versionName '1.4'
+        versionCode 6
+        versionName '1.5'
     }
 
     // مفتاح توقيع ثابت من أسرار GitHub (SALATI_KEYSTORE_B64 و SALATI_KEY_PASS) حتى تعمل التحديثات

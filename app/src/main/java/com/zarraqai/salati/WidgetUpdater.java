@@ -273,22 +273,25 @@ public final class WidgetUpdater {
         cv.drawArc(box, 0, 360, false, track);
 
         float prog;
-        int color;
         if (s.current != null) {
             prog = s.currentProgress();
-            color = p.cur;
         } else {
             // بين الأوقات: نُظهر قرب الأذان القادم
             double total = Duration.between(s.previous.adhan, s.next.adhan).getSeconds();
             double done = Duration.between(s.previous.adhan, s.now).getSeconds();
             prog = (float) Math.max(0, Math.min(1, done / total));
-            color = p.gold;
         }
         Paint arc = new Paint(Paint.ANTI_ALIAS_FLAG);
         arc.setStyle(Paint.Style.STROKE);
         arc.setStrokeWidth(sw);
         arc.setStrokeCap(Paint.Cap.ROUND);
-        arc.setColor(color);
+        boolean warm = s.current != null;
+        android.graphics.SweepGradient g = new android.graphics.SweepGradient(size / 2f, size / 2f,
+                warm ? RingView.WARM : RingView.COOL, warm ? RingView.WARM_POS : RingView.COOL_POS);
+        android.graphics.Matrix mx = new android.graphics.Matrix();
+        mx.setRotate(-96, size / 2f, size / 2f);
+        g.setLocalMatrix(mx);
+        arc.setShader(g);
         cv.drawArc(box, -90, Math.max(1f, 360f * prog), false, arc);
 
         // علامات الدقائق الخفيفة
