@@ -29,6 +29,7 @@ public final class Schedule {
     }
 
     public final ZonedDateTime now;
+    public final List<Prayer> all;     // صلوات أمس واليوم والغد وبعد الغد
     public final Prayer previous;        // آخر صلاة أُذّن لها
     public final Prayer next;            // الصلاة القادمة
     public final Prayer current;         // الصلاة التي ما زال وقتها قائمًا (قد تكون null)
@@ -70,6 +71,7 @@ public final class Schedule {
             }
         }
         this.today = todayTimes;
+        this.all = list;
 
         // نهاية الأوقات: الفجر حتى الشروق، الظهر حتى العصر، العصر حتى المغرب،
         // المغرب حتى العشاء، العشاء حتى منتصف الليل (بين المغرب والفجر التالي).

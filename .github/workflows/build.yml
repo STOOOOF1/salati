@@ -40,16 +40,35 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build debug APK
+      - name: Signing key from secret (optional)
+        env:
+          KEYSTORE_B64: ${{ secrets.SALATI_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/salati.jks"
+            echo "SALATI_KEYSTORE=$RUNNER_TEMP/salati.jks" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build APK
+        env:
+          SALATI_KEY_PASS: ${{ secrets.SALATI_KEY_PASS }}
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk salati.apk
+      - name: Prepare release files
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk salati.apk
+          code=$(grep -oP 'versionCode\s+\K[0-9]+' app/build.gradle)
+          name=$(grep -oP "versionName\s+'\K[^']+" app/build.gradle)
+          notes=$(git log -1 --pretty=%s | sed 's/"/\\"/g')
+          printf '{"versionCode": %s, "versionName": "%s", "notes": "%s"}\n' "$code" "$name" "$notes" > version.json
+          cat version.json
 
       - uses: actions/upload-artifact@v4
         with:
           name: salati-apk
-          path: salati.apk
+          path: |
+            salati.apk
+            version.json
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
@@ -57,5 +76,7 @@ jobs:
           tag_name: latest
           name: صلاتي — آخر إصدار
           body: ملف التثبيت salati.apk لآخر نسخة من الفرع الرئيسي.
-          files: salati.apk
+          files: |
+            salati.apk
+            version.json
           make_latest: true

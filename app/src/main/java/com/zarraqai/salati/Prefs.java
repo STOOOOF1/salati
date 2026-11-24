@@ -52,6 +52,35 @@ public final class Prefs {
         return r;
     }
 
+    // ---------- التنبيه ----------
+    public static final String[] ALERT_KEYS = {"al_fajr", "al_dhuhr", "al_asr", "al_maghrib", "al_isha"};
+    public static final int SOUND_SILENT = 0, SOUND_TONE = 1, SOUND_ADHAN = 2;
+
+    public static boolean[] alerts(Context c) {
+        boolean[] r = new boolean[5];
+        for (int i = 0; i < 5; i++) r[i] = sp(c).getBoolean(ALERT_KEYS[i], false);
+        return r;
+    }
+
+    public static void setAlerts(Context c, boolean[] v) {
+        SharedPreferences.Editor e = sp(c).edit();
+        for (int i = 0; i < 5; i++) e.putBoolean(ALERT_KEYS[i], v[i]);
+        e.apply();
+    }
+
+    public static int soundMode(Context c) { return sp(c).getInt("sound_mode", SOUND_TONE); }
+    public static void setSoundMode(Context c, int m) { sp(c).edit().putInt("sound_mode", m).apply(); }
+    public static String toneUri(Context c) { return sp(c).getString("tone_uri", null); }
+    public static String toneName(Context c) { return sp(c).getString("tone_name", "نغمة المنبّه الافتراضية"); }
+    public static void setTone(Context c, String uri, String name) { sp(c).edit().putString("tone_uri", uri).putString("tone_name", name).apply(); }
+    public static String adhanUri(Context c) { return sp(c).getString("adhan_uri", null); }
+    public static String adhanName(Context c) { return sp(c).getString("adhan_name", "لم يُختر ملف"); }
+    public static void setAdhan(Context c, String uri, String name) { sp(c).edit().putString("adhan_uri", uri).putString("adhan_name", name).apply(); }
+
+    // ---------- التحديث ----------
+    public static long lastUpdateCheck(Context c) { return sp(c).getLong("upd_check", 0); }
+    public static void setLastUpdateCheck(Context c, long t) { sp(c).edit().putLong("upd_check", t).apply(); }
+
     public static int warnMinutes(Context c) { return sp(c).getInt("warn", 30); }
 
     public static void save(Context c, int[] iqama, int warn) {

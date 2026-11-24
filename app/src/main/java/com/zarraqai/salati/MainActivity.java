@@ -86,6 +86,11 @@ public class MainActivity extends Activity {
         lastTimesKey = "";
         handler.post(tick);
         WidgetUpdater.updateAll(this);
+        AlertScheduler.reschedule(this);
+        // تحقق تلقائي من التحديث مرة كل 12 ساعة
+        if (System.currentTimeMillis() - Prefs.lastUpdateCheck(this) > 12 * 3600_000L) {
+            Updater.check(this, true);
+        }
     }
 
     @Override

@@ -2,7 +2,17 @@ package com.zarraqai.salati;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.OpenableColumns;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Switch;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -25,7 +35,7 @@ import java.util.Locale;
 /** إعدادات بسيطة: المدينة أو الموقع الحالي، ودقائق الإقامة، ومدة الإنذار الأحمر. */
 public class SettingsActivity extends Activity {
 
-    private static final int REQ_LOC = 7;
+    private static final int REQ_LOC = 7, REQ_TONE = 8, REQ_ADHAN = 9, REQ_NOTIF = 10;
     private static final String[] IQ_LABELS = {"الفجر", "الظهر", "العصر", "المغرب", "العشاء"};
 
     private Spinner spCity;
@@ -33,6 +43,8 @@ public class SettingsActivity extends Activity {
     private final EditText[] iq = new EditText[5];
     private EditText etWarn;
     private boolean spinnerReady = false;
+    private final Switch[] alertSw = new Switch[5];
+    private TextView tvTone, tvAdhan;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -75,6 +87,7 @@ public class SettingsActivity extends Activity {
                             Prefs.CITY_COORDS[pos][0], Prefs.CITY_COORDS[pos][1], pos);
                     showLoc();
                     WidgetUpdater.updateAll(SettingsActivity.this);
+                    AlertScheduler.reschedule(SettingsActivity.this);
                 } else {
                     requestLocation();
                 }
@@ -113,6 +126,71 @@ public class SettingsActivity extends Activity {
         wLp.topMargin = dp(10);
         warnCard.addView(etWarn, wLp);
 
+        // ---------- تنبيه الأذان ----------
+        LinearLayout alCard = card();
+        root.addView(alCard, cardLp());
+        alCard.addView(title("تنبيه الأذان", text));
+        alCard.addView(label("اختر الصلوات التي تريد التنبيه عند أذانها:", muted));
+        boolean[] on = Prefs.alerts(this);
+        for (int i = 0; i < 5; i++) {
+            Switch sw = new Switch(this);
+            sw.setText(IQ_LABELS[i]);
+            sw.setTextColor(text);
+            sw.setTextSize(16);
+            sw.setTypeface(getResources().getFont(R.font.tajawal_medium));
+            sw.setChecked(on[i]);
+            sw.setPadding(0, dp(8), 0, dp(8));
+            sw.setOnCheckedChangeListener((btn, checked) -> saveAlerts(checked));
+            alertSw[i] = sw;
+            alCard.addView(sw);
+        }
+
+        TextView soundTitle = title("صوت التنبيه", text);
+        soundTitle.setPadding(0, dp(14), 0, dp(4));
+        alCard.addView(soundTitle);
+        RadioGroup rg = new RadioGroup(this);
+        String[] modes = {"بدون صوت (إشعار فقط)", "نغمة من نغمات الجهاز", "أذان (ملف صوتي من جهازك)"};
+        int[] ids = {101, 102, 103};
+        for (int i = 0; i < 3; i++) {
+            RadioButton r = new RadioButton(this);
+            r.setId(ids[i]);
+            r.setText(modes[i]);
+            r.setTextColor(text);
+            r.setTextSize(15);
+            r.setPadding(dp(6), dp(6), dp(6), dp(6));
+            rg.addView(r);
+        }
+        rg.check(ids[Prefs.soundMode(this)]);
+        rg.setOnCheckedChangeListener((g, id) -> Prefs.setSoundMode(this, id - 101));
+        alCard.addView(rg);
+
+        tvTone = label("", muted);
+        alCard.addView(tvTone);
+        Button pickTone = secondaryButton("اختيار النغمة");
+        pickTone.setOnClickListener(v -> pickTone());
+        alCard.addView(pickTone, btnLp());
+
+        tvAdhan = label("", muted);
+        alCard.addView(tvAdhan);
+        Button pickAdhan = secondaryButton("اختيار ملف الأذان");
+        pickAdhan.setOnClickListener(v -> pickAdhan());
+        alCard.addView(pickAdhan, btnLp());
+
+        Button testBtn = secondaryButton("تجربة الصوت");
+        testBtn.setOnClickListener(v -> AdhanService.start(this, "", true));
+        alCard.addView(testBtn, btnLp());
+        showSounds();
+
+        // ---------- التحديث ----------
+        LinearLayout upCard = card();
+        root.addView(upCard, cardLp());
+        upCard.addView(title("تحديث التطبيق", text));
+        upCard.addView(label("الإصدار الحالي: " + Updater.currentName(this)
+                + "\nيتحقق التطبيق تلقائيًا كل 12 ساعة عند فتحه.", muted));
+        Button upBtn = secondaryButton("البحث عن تحديث الآن");
+        upBtn.setOnClickListener(v -> Updater.check(this, false));
+        upCard.addView(upBtn, btnLp());
+
         Button save = new Button(this);
         save.setText("حفظ");
         save.setTextColor(0xFF06231B);
@@ -146,10 +224,84 @@ public class SettingsActivity extends Activity {
             int w = clamp(Integer.parseInt(etWarn.getText().toString().trim()), 1, 180);
             Prefs.save(this, v, w);
             WidgetUpdater.updateAll(this);
+            AlertScheduler.reschedule(this);
             Toast.makeText(this, "تم الحفظ", Toast.LENGTH_SHORT).show();
             finish();
         } catch (NumberFormatException e) {
             Toast.makeText(this, "اكتب أرقامًا صحيحة", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // ---------- التنبيه ----------
+
+    private void saveAlerts(boolean justEnabled) {
+        boolean[] v = new boolean[5];
+        for (int i = 0; i < 5; i++) v[i] = alertSw[i].isChecked();
+        Prefs.setAlerts(this, v);
+        AlertScheduler.reschedule(this);
+        if (justEnabled && Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIF);
+        }
+    }
+
+    private void showSounds() {
+        tvTone.setText("النغمة: " + Prefs.toneName(this));
+        tvAdhan.setText("ملف الأذان: " + Prefs.adhanName(this));
+    }
+
+    private void pickTone() {
+        Intent i = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL);
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "اختر نغمة التنبيه");
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false);
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+        String cur = Prefs.toneUri(this);
+        i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                cur != null ? Uri.parse(cur) : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
+        try { startActivityForResult(i, REQ_TONE); }
+        catch (Exception e) { Toast.makeText(this, "لا يتوفر منتقي النغمات", Toast.LENGTH_SHORT).show(); }
+    }
+
+    private void pickAdhan() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("audio/*");
+        try { startActivityForResult(i, REQ_ADHAN); }
+        catch (Exception e) { Toast.makeText(this, "لا يتوفر مدير ملفات", Toast.LENGTH_SHORT).show(); }
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (res != RESULT_OK || data == null) return;
+        if (req == REQ_TONE) {
+            Uri uri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
+            if (uri == null) return;
+            String name = "نغمة مختارة";
+            try {
+                Ringtone r = RingtoneManager.getRingtone(this, uri);
+                if (r != null) name = r.getTitle(this);
+            } catch (Exception ignored) {}
+            Prefs.setTone(this, uri.toString(), name);
+            Prefs.setSoundMode(this, Prefs.SOUND_TONE);
+            ((RadioGroup) findViewById(102).getParent()).check(102);
+            showSounds();
+        } else if (req == REQ_ADHAN) {
+            Uri uri = data.getData();
+            if (uri == null) return;
+            try {
+                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Exception ignored) {}
+            String name = "ملف صوتي";
+            try (Cursor c = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+                if (c != null && c.moveToFirst()) name = c.getString(0);
+            } catch (Exception ignored) {}
+            Prefs.setAdhan(this, uri.toString(), name);
+            Prefs.setSoundMode(this, Prefs.SOUND_ADHAN);
+            ((RadioGroup) findViewById(103).getParent()).check(103);
+            showSounds();
         }
     }
 
@@ -166,6 +318,11 @@ public class SettingsActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int code, String[] perms, int[] res) {
         super.onRequestPermissionsResult(code, perms, res);
+        if (code == REQ_NOTIF) {
+            if (res.length == 0 || res[0] != PackageManager.PERMISSION_GRANTED)
+                Toast.makeText(this, "بدون إذن الإشعارات لن يظهر تنبيه الأذان", Toast.LENGTH_LONG).show();
+            return;
+        }
         if (code == REQ_LOC && res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) fetchLocation();
         else Toast.makeText(this, "لم يُسمح بالوصول إلى الموقع", Toast.LENGTH_SHORT).show();
     }
@@ -202,6 +359,7 @@ public class SettingsActivity extends Activity {
         Prefs.setPlace(this, "موقعي الحالي", l.getLatitude(), l.getLongitude(), -1);
         showLoc();
         WidgetUpdater.updateAll(this);
+        AlertScheduler.reschedule(this);
         Toast.makeText(this, "تم تحديث الموقع", Toast.LENGTH_SHORT).show();
     }
 
@@ -215,6 +373,24 @@ public class SettingsActivity extends Activity {
         t.setTypeface(getResources().getFont(R.font.tajawal_bold));
         t.setPadding(0, 0, 0, dp(4));
         return t;
+    }
+
+    private Button secondaryButton(String s) {
+        Button b = new Button(this);
+        b.setText(s);
+        b.setAllCaps(false);
+        b.setTextColor(getColor(R.color.accent));
+        b.setTextSize(15);
+        b.setTypeface(getResources().getFont(R.font.tajawal_bold));
+        b.setBackgroundResource(R.drawable.input);
+        b.setStateListAnimator(null);
+        return b;
+    }
+
+    private LinearLayout.LayoutParams btnLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(46));
+        lp.topMargin = dp(8);
+        return lp;
     }
 
     private LinearLayout card() {
