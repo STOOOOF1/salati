@@ -13,32 +13,43 @@ import java.time.ZonedDateTime;
 public final class PrayerCalc {
 
     public static final int FAJR = 0, SUNRISE = 1, DHUHR = 2, ASR = 3, MAGHRIB = 4, ISHA = 5;
+    /** أوقات إضافية في المصفوفة: مصير ظل الشيء مثليه، واصفرار الشمس (تقريبًا عند ارتفاع 5°). */
+    public static final int ASR_2X = 6, ISFIRAR = 7;
 
     private PrayerCalc() {}
 
-    /** يعيد ستة أوقات: الفجر، الشروق، الظهر، العصر، المغرب، العشاء. */
     public static ZonedDateTime[] compute(LocalDate date, double lat, double lng, ZoneId zone, boolean ramadan) {
+        return compute(date, lat, lng, zone, ramadan, 1);
+    }
+
+    /**
+     * يعيد ثمانية أوقات: الفجر، الشروق، الظهر، العصر، المغرب، العشاء، ثم المثلين والاصفرار.
+     * @param asrFactor 1 للجمهور، 2 للحنفية (أول العصر عند المثلين)
+     */
+    public static ZonedDateTime[] compute(LocalDate date, double lat, double lng, ZoneId zone, boolean ramadan, int asrFactor) {
         ZonedDateTime noonLocal = date.atTime(12, 0).atZone(zone);
         double tz = noonLocal.getOffset().getTotalSeconds() / 3600.0;
         double jd = julian(date.getYear(), date.getMonthValue(), date.getDayOfMonth()) - lng / (15.0 * 24.0);
 
         // تقديرات أولية بالساعات ثم تكرار لتحسين الدقة
-        double fajr = 5, sunrise = 6, dhuhr = 12, asr = 13, sunset = 18;
+        double fajr = 5, sunrise = 6, dhuhr = 12, asr = 13, sunset = 18, asr2 = 15, isfirar = 17;
         for (int i = 0; i < 2; i++) {
             fajr = sunAngleTime(jd, 18.5, fajr / 24.0, lat, true);
             sunrise = sunAngleTime(jd, 0.833, sunrise / 24.0, lat, true);
             dhuhr = midDay(jd, dhuhr / 24.0);
-            asr = asrTime(jd, 1, asr / 24.0, lat);
+            asr = asrTime(jd, asrFactor, asr / 24.0, lat);
+            asr2 = asrTime(jd, 2, asr2 / 24.0, lat);
+            isfirar = sunAngleTime(jd, -5, isfirar / 24.0, lat, false);
             sunset = sunAngleTime(jd, 0.833, sunset / 24.0, lat, false);
         }
         double adj = tz - lng / 15.0;
-        fajr += adj; sunrise += adj; dhuhr += adj; asr += adj; sunset += adj;
+        fajr += adj; sunrise += adj; dhuhr += adj; asr += adj; sunset += adj; asr2 += adj; isfirar += adj;
         double isha = sunset + (ramadan ? 120 : 90) / 60.0;
 
-        double[] hours = {fajr, sunrise, dhuhr, asr, sunset, isha};
-        ZonedDateTime[] out = new ZonedDateTime[6];
+        double[] hours = {fajr, sunrise, dhuhr, asr, sunset, isha, asr2, isfirar};
+        ZonedDateTime[] out = new ZonedDateTime[8];
         ZonedDateTime midnight = date.atStartOfDay(zone);
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 8; i++) {
             long minutes = Math.round(hours[i] * 60.0);
             out[i] = midnight.plusMinutes(minutes);
         }

@@ -134,16 +134,26 @@ public class MainActivity extends Activity {
         float u = s.urgency();
         if (s.current != null) {
             float prog = s.currentProgress();
-            tvRingLabel.setText("باقي على خروج وقت " + s.current.name + ":");
+            boolean darura = s.inDarura();
+            boolean hasDarura = s.current.choiceEnd.isBefore(s.current.end);
+            tvRingLabel.setText(darura ? "وقت الضرورة • باقي على خروج " + s.current.name + ":"
+                    : (hasDarura ? "باقي من وقت اختيار " : "باقي على خروج وقت ") + s.current.name + ":");
             tvRingTime.setText(hms(s.currentRemaining()));
             ring.set(prog, true);
             bar.set(prog, true);
-            tvPercent.setText("مضى " + Math.round(prog * 100) + "% • منذ الأذان " + Schedule.fmt(s.sincePrevious()));
-            if (u > 0) {
-                tvWarn.setText("الوقت المتبقي يوشك على النهاية • ينتهي " + s.current.end.format(TIME));
+            tvPercent.setText((darura ? "انتهى وقت الاختيار" : "مضى " + Math.round(prog * 100) + "%")
+                    + " • منذ الأذان " + Schedule.fmt(s.sincePrevious()));
+            String madh = "المذهب " + Schedule.MADHHABS[s.madhhab];
+            if (darura) {
+                tvWarn.setText("أنت في وقت الضرورة (" + madh + ") • ينتهي " + s.current.end.format(TIME));
+                tvWarn.setTextColor(cRed);
+            } else if (u > 0) {
+                tvWarn.setText("الوقت المتبقي يوشك على النهاية"
+                        + (hasDarura ? " (ثم وقت الضرورة حتى " + s.current.end.format(TIME) + ")" : ""));
                 tvWarn.setTextColor(cRed);
             } else {
-                tvWarn.setText("ينتهي وقت " + s.current.name + " " + s.current.end.format(TIME));
+                tvWarn.setText((hasDarura ? "الاختيار حتى " + s.current.choiceEnd.format(TIME) + " • الضرورة حتى "
+                        : "ينتهي وقت " + s.current.name + " ") + s.current.end.format(TIME));
                 tvWarn.setTextColor(cMuted);
             }
             tvRingTime.setTextColor(Schedule.blend(cText, cRed, u));
@@ -185,8 +195,11 @@ public class MainActivity extends Activity {
                 if (s.iqamaActive()) {
                     note = "الإقامة بعد " + Schedule.fmt(s.untilIqama());
                     noteColor = cGold;
+                } else if (s.inDarura()) {
+                    note = "وقت الضرورة - المذهب " + Schedule.MADHHABS[s.madhhab];
+                    noteColor = cRed;
                 } else if (u > 0) {
-                    note = "أوشك وقتها على الخروج";
+                    note = "أوشكت على النهاية - المذهب " + Schedule.MADHHABS[s.madhhab];
                     noteColor = cRed;
                 } else {
                     note = "الوقت الحالي";

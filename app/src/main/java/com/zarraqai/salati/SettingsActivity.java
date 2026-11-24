@@ -99,6 +99,36 @@ public class SettingsActivity extends Activity {
         spCity.setBackgroundResource(R.drawable.input);
         locCard.addView(spCity, spLp);
 
+        // ---------- المذهب ----------
+        LinearLayout mCard = card();
+        root.addView(mCard, cardLp());
+        mCard.addView(title("المذهب (نهاية أوقات الصلاة)", text));
+        String[] mDesc = {
+                "الحنبلي: اختيار العصر إلى مصير ظل الشيء مثليه، والعشاء إلى ثلث الليل، ثم وقت الضرورة إلى المغرب وإلى الفجر.",
+                "الشافعي: اختيار العصر إلى المثلين، والعشاء إلى ثلث الليل، ثم ما بعده إلى المغرب وإلى الفجر.",
+                "المالكي: اختيار العصر إلى اصفرار الشمس، والعشاء إلى ثلث الليل، ثم الضروري إلى المغرب وإلى الفجر.",
+                "الحنفي: أول العصر عند المثلين، ويُكره تأخيره إلى الاصفرار، والعشاء إلى نصف الليل ثم إلى الفجر."};
+        RadioGroup mg = new RadioGroup(this);
+        for (int i = 0; i < 4; i++) {
+            RadioButton r = new RadioButton(this);
+            r.setId(201 + i);
+            r.setText(mDesc[i]);
+            r.setTextColor(text);
+            r.setTextSize(14);
+            r.setPadding(dp(6), dp(8), dp(6), dp(8));
+            mg.addView(r);
+        }
+        mg.check(201 + Prefs.madhhab(this));
+        mg.setOnCheckedChangeListener((g, id) -> {
+            Prefs.setMadhhab(this, id - 201);
+            WidgetUpdater.updateAll(this);
+            AlertScheduler.reschedule(this);
+        });
+        mCard.addView(mg);
+        TextView mNote = label("الاصفرار يُقدَّر حسابيًا عند ارتفاع الشمس 5° فوق الأفق، فهو تقريبي.", muted);
+        mNote.setTextSize(12);
+        mCard.addView(mNote);
+
         LinearLayout iqCard = card();
         root.addView(iqCard, cardLp());
         iqCard.addView(title("الإقامة بعد الأذان (بالدقائق)", text));
@@ -204,7 +234,7 @@ public class SettingsActivity extends Activity {
         root.addView(save, lp);
 
         TextView note = label("طريقة الحساب: أم القرى (الفجر 18.5°، العشاء بعد المغرب بـ90 دقيقة و120 في رمضان). "
-                + "نهاية الأوقات: الفجر حتى الشروق، والظهر حتى العصر، والعصر حتى المغرب، والمغرب حتى العشاء، والعشاء حتى منتصف الليل.", muted);
+                + "نهاية الأوقات: الفجر حتى الشروق، والظهر حتى العصر، والمغرب حتى العشاء، والعصر والعشاء حسب المذهب المختار.", muted);
         note.setTextSize(12);
         note.setPadding(dp(4), dp(18), dp(4), 0);
         root.addView(note);

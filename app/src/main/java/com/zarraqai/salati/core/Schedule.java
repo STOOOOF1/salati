@@ -15,13 +15,17 @@ public final class Schedule {
 
     public static final String[] NAMES = {"الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"};
 
+    public static final int HANBALI = 0, SHAFII = 1, MALIKI = 2, HANAFI = 3;
+    public static final String[] MADHHABS = {"الحنبلي", "الشافعي", "المالكي", "الحنفي"};
+
     /** صلاة واحدة بوقت أذانها وإقامتها ونهاية وقتها. */
     public static final class Prayer {
         public final int index;          // رقم الصلاة في PrayerCalc
         public final String name;
         public final ZonedDateTime adhan;
         public final ZonedDateTime iqama;
-        public ZonedDateTime end;        // نهاية وقت الصلاة
+        public ZonedDateTime end;        // نهاية الوقت كله (مع الضرورة)
+        public ZonedDateTime choiceEnd;  // نهاية وقت الاختيار (= end إن لم يكن له ضرورة)
 
         Prayer(int index, String name, ZonedDateTime adhan, ZonedDateTime iqama) {
             this.index = index; this.name = name; this.adhan = adhan; this.iqama = iqama;
@@ -37,6 +41,7 @@ public final class Schedule {
     public final String iqamaName;
     public final ZonedDateTime[] today;  // أوقات اليوم الستة
     public final int warnMinutes;
+    public final int madhhab;
 
     /**
      * @param iqamaMinutes دقائق الإقامة بعد الأذان: فجر، ظهر، عصر، مغرب، عشاء
@@ -44,22 +49,31 @@ public final class Schedule {
      */
     public static Schedule at(ZonedDateTime now, double lat, double lng, int[] iqamaMinutes,
                               int warnMinutes, Predicate<LocalDate> isRamadan) {
-        return new Schedule(now, lat, lng, iqamaMinutes, warnMinutes, isRamadan);
+        return new Schedule(now, lat, lng, iqamaMinutes, warnMinutes, isRamadan, HANBALI);
+    }
+
+    public static Schedule at(ZonedDateTime now, double lat, double lng, int[] iqamaMinutes,
+                              int warnMinutes, Predicate<LocalDate> isRamadan, int madhhab) {
+        return new Schedule(now, lat, lng, iqamaMinutes, warnMinutes, isRamadan, madhhab);
     }
 
     private Schedule(ZonedDateTime now, double lat, double lng, int[] iqamaMinutes,
-                     int warnMinutes, Predicate<LocalDate> isRamadan) {
+                     int warnMinutes, Predicate<LocalDate> isRamadan, int madhhab) {
         this.now = now;
         this.warnMinutes = warnMinutes;
+        this.madhhab = madhhab;
         ZoneId zone = now.getZone();
         LocalDate d = now.toLocalDate();
 
         List<Prayer> list = new ArrayList<>();
         List<ZonedDateTime> sunrises = new ArrayList<>();
+        List<ZonedDateTime[]> days = new ArrayList<>();
         ZonedDateTime[] todayTimes = null;
         for (int off = -1; off <= 2; off++) {
             LocalDate day = d.plusDays(off);
-            ZonedDateTime[] t = PrayerCalc.compute(day, lat, lng, zone, isRamadan != null && isRamadan.test(day));
+            ZonedDateTime[] t = PrayerCalc.compute(day, lat, lng, zone, isRamadan != null && isRamadan.test(day),
+                    madhhab == HANAFI ? 2 : 1);
+            days.add(t);
             if (off == 0) todayTimes = t;
             sunrises.add(t[PrayerCalc.SUNRISE]);
             int[] idx = {PrayerCalc.FAJR, PrayerCalc.DHUHR, PrayerCalc.ASR, PrayerCalc.MAGHRIB, PrayerCalc.ISHA};
@@ -73,25 +87,34 @@ public final class Schedule {
         this.today = todayTimes;
         this.all = list;
 
-        // نهاية الأوقات: الفجر حتى الشروق، الظهر حتى العصر، العصر حتى المغرب،
-        // المغرب حتى العشاء، العشاء حتى منتصف الليل (بين المغرب والفجر التالي).
+        // نهاية الأوقات حسب المذهب:
+        // الفجر إلى الشروق، والظهر إلى العصر، والمغرب إلى العشاء.
+        // العصر: الاختيار إلى المثلين (الحنبلي والشافعي) أو الاصفرار (المالكي والحنفي)، والضرورة إلى المغرب.
+        // العشاء: الاختيار إلى ثلث الليل (ونصفه عند الحنفية)، والضرورة إلى الفجر.
         for (int j = 0; j < list.size(); j++) {
             Prayer p = list.get(j);
             int day = j / 5;
+            ZonedDateTime[] t = days.get(day);
             switch (p.index) {
                 case PrayerCalc.FAJR:
                     p.end = sunrises.get(day);
                     break;
+                case PrayerCalc.ASR:
+                    p.end = list.get(j + 1).adhan;
+                    p.choiceEnd = (madhhab == HANBALI || madhhab == SHAFII) ? t[PrayerCalc.ASR_2X] : t[PrayerCalc.ISFIRAR];
+                    break;
                 case PrayerCalc.ISHA: {
                     ZonedDateTime maghrib = list.get(j - 1).adhan;
                     ZonedDateTime nextFajr = j + 1 < list.size() ? list.get(j + 1).adhan : p.adhan.plusHours(9);
-                    long half = Duration.between(maghrib, nextFajr).getSeconds() / 2;
-                    p.end = maghrib.plusSeconds(half);
+                    long night = Duration.between(maghrib, nextFajr).getSeconds();
+                    p.end = nextFajr;
+                    p.choiceEnd = maghrib.plusSeconds(madhhab == HANAFI ? night / 2 : night / 3);
                     break;
                 }
                 default:
                     p.end = list.get(j + 1).adhan;
             }
+            if (p.choiceEnd == null || !p.choiceEnd.isBefore(p.end) || !p.choiceEnd.isAfter(p.adhan)) p.choiceEnd = p.end;
         }
 
         Prayer prev = null, nxt = null, cur = null;
@@ -126,27 +149,39 @@ public final class Schedule {
         return Duration.between(next.adhan, next.iqama).toMinutes();
     }
 
-    /** الوقت الباقي من الصلاة الحالية، أو null إن لم يكن هناك وقت قائم. */
-    public Duration currentRemaining() {
-        return current == null ? null : Duration.between(now, current.end);
+    /** هل نحن في وقت الضرورة للصلاة الحالية؟ */
+    public boolean inDarura() {
+        return current != null && !now.isBefore(current.choiceEnd) && current.choiceEnd.isBefore(current.end);
     }
 
-    /** نسبة مضيّ وقت الصلاة الحالية من 0 إلى 1. */
+    /** اللحظة التي يُعدّ إليها: نهاية الاختيار، ثم نهاية الضرورة. */
+    public ZonedDateTime currentTarget() {
+        if (current == null) return null;
+        return inDarura() ? current.end : current.choiceEnd;
+    }
+
+    /** الوقت الباقي من الصلاة الحالية، أو null إن لم يكن هناك وقت قائم. */
+    public Duration currentRemaining() {
+        return current == null ? null : Duration.between(now, currentTarget());
+    }
+
+    /** نسبة مضيّ وقت الاختيار من 0 إلى 1 (1 في وقت الضرورة). */
     public float currentProgress() {
         if (current == null) return 0f;
-        double total = Duration.between(current.adhan, current.end).getSeconds();
+        if (inDarura()) return 1f;
+        double total = Duration.between(current.adhan, current.choiceEnd).getSeconds();
         double done = Duration.between(current.adhan, now).getSeconds();
         return (float) Math.max(0, Math.min(1, done / total));
     }
 
     /**
-     * درجة الإنذار من 0 (عادي) إلى 1 (أحمر كامل): تبدأ قبل نهاية الوقت بـ warnMinutes
-     * وتشتد تدريجيًا حتى خروج الوقت.
+     * درجة الإنذار من 0 (عادي) إلى 1 (أحمر كامل): تبدأ قبل نهاية وقت الاختيار بـ warnMinutes،
+     * وتبقى حمراء طوال وقت الضرورة.
      */
     public float urgency() {
-        Duration r = currentRemaining();
-        if (r == null) return 0f;
-        double sec = r.getSeconds();
+        if (current == null) return 0f;
+        if (inDarura()) return 1f;
+        double sec = Duration.between(now, current.choiceEnd).getSeconds();
         double win = warnMinutes * 60.0;
         if (sec >= win) return 0f;
         return (float) Math.max(0, Math.min(1, 1 - sec / win));
@@ -173,7 +208,10 @@ public final class Schedule {
     public ZonedDateTime nextBoundary() {
         ZonedDateTime b = next.adhan;
         if (iqamaTarget.isAfter(now) && iqamaTarget.isBefore(b)) b = iqamaTarget;
-        if (current != null && current.end.isAfter(now) && current.end.isBefore(b)) b = current.end;
+        if (current != null) {
+            ZonedDateTime t = currentTarget();
+            if (t.isAfter(now) && t.isBefore(b)) b = t;
+        }
         return b;
     }
 }

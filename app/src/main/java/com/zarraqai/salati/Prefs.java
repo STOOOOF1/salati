@@ -81,6 +81,9 @@ public final class Prefs {
     public static long lastUpdateCheck(Context c) { return sp(c).getLong("upd_check", 0); }
     public static void setLastUpdateCheck(Context c, long t) { sp(c).edit().putLong("upd_check", t).apply(); }
 
+    public static int madhhab(Context c) { return sp(c).getInt("madhhab", Schedule.HANBALI); }
+    public static void setMadhhab(Context c, int m) { sp(c).edit().putInt("madhhab", m).apply(); }
+
     public static int warnMinutes(Context c) { return sp(c).getInt("warn", 30); }
 
     public static void save(Context c, int[] iqama, int warn) {
@@ -102,6 +105,6 @@ public final class Prefs {
     }
 
     public static Schedule schedule(Context c) {
-        return Schedule.at(ZonedDateTime.now(), lat(c), lng(c), iqama(c), warnMinutes(c), Prefs::isRamadan);
+        return Schedule.at(ZonedDateTime.now(), lat(c), lng(c), iqama(c), warnMinutes(c), Prefs::isRamadan, madhhab(c));
     }
 }

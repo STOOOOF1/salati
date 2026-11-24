@@ -91,7 +91,7 @@ public final class WidgetUpdater {
                 countdown(v, R.id.nextChrono, s.next.adhan, nowMs, nowEl);
                 v.setTextViewText(R.id.sub, s.iqamaActive()
                         ? "إقامة " + s.previous.name + " " + s.previous.iqama.format(SHORT)
-                        : (s.current != null ? "يخرج " + s.current.name + " " + s.current.end.format(SHORT)
+                        : (s.current != null ? (s.inDarura() ? "ضرورة حتى " : "يخرج " + s.current.name + " ") + s.currentTarget().format(SHORT)
                                              : "عند " + s.next.adhan.format(MainActivity.TIME)));
                 v.setTextColor(R.id.sub, s.iqamaActive() ? p.gold : (p.u > 0 ? p.cur : p.muted));
                 break;
@@ -146,7 +146,8 @@ public final class WidgetUpdater {
     private static void current(RemoteViews v, Schedule s, Pal p, long nowMs, long nowEl, String label) {
         if (s.current != null) {
             v.setTextViewText(R.id.curLabel, label);
-            countdown(v, R.id.curChrono, s.current.end, nowMs, nowEl);
+            if (s.inDarura()) v.setTextViewText(R.id.curLabel, "ضرورة " + s.current.name);
+            countdown(v, R.id.curChrono, s.currentTarget(), nowMs, nowEl);
             v.setTextColor(R.id.curChrono, p.cur);
             v.setTextColor(R.id.curLabel, p.u > 0 ? p.cur : p.muted);
             v.setProgressBar(R.id.progress, 1000, (int) (s.currentProgress() * 1000), false);
@@ -223,7 +224,7 @@ public final class WidgetUpdater {
                 v.setTextColor(WidgetIds.COL_CHRONO[k], p.gold);
                 v.setViewVisibility(WidgetIds.COL_CHRONO[k], View.VISIBLE);
             } else if (isCur && s.current != null) {
-                countdown(v, WidgetIds.COL_CHRONO[k], s.current.end, nowMs, nowEl);
+                countdown(v, WidgetIds.COL_CHRONO[k], s.currentTarget(), nowMs, nowEl);
                 v.setTextColor(WidgetIds.COL_CHRONO[k], p.cur);
                 v.setViewVisibility(WidgetIds.COL_CHRONO[k], p.u > 0 ? View.VISIBLE : View.GONE);
             } else {
@@ -239,7 +240,8 @@ public final class WidgetUpdater {
         DateTimeFormatter dayF = DateTimeFormatter.ofPattern("EEEE", new Locale("ar"));
         for (int d = 0; d < 7; d++) {
             LocalDate day = s.now.toLocalDate().plusDays(d);
-            ZonedDateTime[] t = PrayerCalc.compute(day, lat, lng, s.now.getZone(), Prefs.isRamadan(day));
+            ZonedDateTime[] t = PrayerCalc.compute(day, lat, lng, s.now.getZone(), Prefs.isRamadan(day),
+                    s.madhhab == Schedule.HANAFI ? 2 : 1);
             ZonedDateTime noon = day.atTime(12, 0).atZone(s.now.getZone());
             boolean today = d == 0;
             v.setTextViewText(WidgetIds.WEEK_DAY[d], today ? "اليوم" : noon.format(dayF));
@@ -322,8 +324,8 @@ public final class WidgetUpdater {
         ZonedDateTime now = s.now;
         ZonedDateTime at = s.nextBoundary();
         if (s.iqamaActive() && s.previous.iqama.isBefore(at)) at = s.previous.iqama;
-        if (s.current != null) {
-            ZonedDateTime warnStart = s.current.end.minusMinutes(s.warnMinutes);
+        if (s.current != null && !s.inDarura()) {
+            ZonedDateTime warnStart = s.current.choiceEnd.minusMinutes(s.warnMinutes);
             if (now.isBefore(warnStart)) {
                 if (warnStart.isBefore(at)) at = warnStart;
             } else {
