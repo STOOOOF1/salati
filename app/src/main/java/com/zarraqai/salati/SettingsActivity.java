@@ -240,6 +240,8 @@ public class SettingsActivity extends Activity {
         root.addView(note);
 
         setContentView(sv);
+        sv.setClipToPadding(false);
+        Insets.on(sv, (top, bottom) -> sv.setPadding(0, top, 0, bottom));
         showLoc();
     }
 

@@ -63,7 +63,9 @@ public class MainActivity extends Activity {
         cMuted = 0xFFB8C4C2;
         cGold = getColor(R.color.gold);
         buildRows();
+        fitInsetsAndRing();
 
+        findViewById(R.id.navHome).setOnClickListener(v -> ((android.widget.ScrollView) findViewById(R.id.scroll)).smoothScrollTo(0, 0));
         findViewById(R.id.navSettings).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         findViewById(R.id.placeBox).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
     }
@@ -85,6 +87,29 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(tick);
     }
 
+    /** يُبعد المحتوى عن أشرطة النظام، ويضبط عرض محتوى الحلقة ليتسع داخلها في كل الشاشات. */
+    private void fitInsetsAndRing() {
+        android.view.View content = findViewById(R.id.content);
+        android.view.View nav = findViewById(R.id.navBar);
+        Insets.on(content, (top, bottom) -> {
+            content.setPadding(0, top, 0, 0);
+            nav.setPadding(0, 0, 0, bottom);
+        });
+        tvRingTime.setAutoSizeTextTypeUniformWithConfiguration(26, 46, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+        ring.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            int w = r - l;
+            if (w <= 0) return;
+            float d = getResources().getDisplayMetrics().density;
+            int inner = (int) (w - 2 * 24 * d - 2 * 14 * d); // قطر الدائرة الداخلية
+            int target = (int) (inner * 0.74f);
+            android.view.View box = findViewById(R.id.ringInner);
+            if (box.getLayoutParams().width != target) {
+                box.getLayoutParams().width = target;
+                box.post(box::requestLayout);
+            }
+        });
+    }
+
     private void buildRows() {
         LinearLayout box = findViewById(R.id.timesBox);
         Typeface bold = getResources().getFont(R.font.tajawal_extrabold);
@@ -104,6 +129,7 @@ public class MainActivity extends Activity {
             note.setTypeface(med);
             note.setTextSize(13);
             note.setMaxLines(1);
+            note.setEllipsize(android.text.TextUtils.TruncateAt.END);
             note.setPadding(dp(10), 0, dp(8), 0);
             TextView t = new TextView(this);
             t.setTypeface(bold);

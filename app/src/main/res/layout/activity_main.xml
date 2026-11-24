@@ -9,11 +9,13 @@
         android:layout_height="match_parent" />
 
     <LinearLayout
+        android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
         <ScrollView
+            android:id="@+id/scroll"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -79,7 +81,8 @@
                         android:layout_height="wrap_content" />
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:id="@+id/ringInner"
+                        android:layout_width="220dp"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:gravity="center_horizontal"
@@ -87,53 +90,61 @@
 
                         <TextView
                             android:id="@+id/tvRingLabel"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
+                            android:gravity="center"
+                            android:maxLines="2"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/tajawal_bold"
                             android:textColor="@color/text"
-                            android:textSize="18sp" />
+                            android:textSize="16sp" />
 
                         <TextView
                             android:id="@+id/tvRingTime"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
+                            android:gravity="center"
+                            android:maxLines="1"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:fontFamily="@font/tajawal_extrabold"
                             android:includeFontPadding="false"
                             android:textColor="@color/text"
-                            android:textSize="52sp" />
+                            android:textSize="46sp" />
 
                         <com.zarraqai.salati.GradientBar
                             android:id="@+id/bar"
-                            android:layout_width="190dp"
+                            android:layout_width="match_parent"
                             android:layout_height="9dp"
-                            android:layout_marginTop="12dp" />
+                            android:layout_marginTop="10dp" />
 
                         <TextView
                             android:id="@+id/tvPercent"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:ellipsize="end"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
                             android:fontFamily="@font/tajawal_medium"
                             android:textColor="@color/text"
-                            android:textSize="13sp" />
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/tvWarn"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
+                            android:maxLines="2"
+                            android:ellipsize="end"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:fontFamily="@font/tajawal_medium"
                             android:gravity="center"
-                            android:maxWidth="230dp"
                             android:textColor="@color/muted"
-                            android:textSize="13sp" />
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/tvNow"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
+                            android:layout_marginTop="8dp"
                             android:fontFamily="@font/tajawal_bold"
                             android:textColor="#D9FFFFFF"
                             android:textSize="15sp" />
@@ -150,15 +161,17 @@
         </ScrollView>
 
         <LinearLayout
+            android:id="@+id/navBar"
             android:layout_width="match_parent"
-            android:layout_height="70dp"
+            android:layout_height="wrap_content"
+            android:minHeight="70dp"
             android:background="@drawable/nav_bar"
             android:orientation="horizontal">
 
             <LinearLayout
                 android:id="@+id/navHome"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="70dp"
                 android:layout_weight="1"
                 android:background="?android:attr/selectableItemBackground"
                 android:gravity="center"
@@ -176,13 +189,13 @@
                     android:fontFamily="@font/tajawal_bold"
                     android:text="الرئيسية"
                     android:textColor="@color/text"
-                    android:textSize="13sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/navSettings"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="70dp"
                 android:layout_weight="1"
                 android:alpha="0.6"
                 android:background="?android:attr/selectableItemBackground"
@@ -201,7 +214,7 @@
                     android:fontFamily="@font/tajawal_medium"
                     android:text="الإعدادات"
                     android:textColor="@color/text"
-                    android:textSize="13sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
