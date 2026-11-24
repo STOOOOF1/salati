@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">صلاتي</string>
-    <string name="widget_small">صلاتي — صغير</string>
-    <string name="widget_medium">صلاتي — متوسط</string>
-    <string name="widget_large">صلاتي — كبير</string>
     <string name="settings">الإعدادات</string>
+    <string name="widget_small">صلاتي • الأذان القادم</string>
+    <string name="widget_ring">صلاتي • الحلقة</string>
+    <string name="widget_strip">صلاتي • شريط الصلوات</string>
+    <string name="widget_medium">صلاتي • الساعة والعدّادات</string>
+    <string name="widget_large">صلاتي • الشامل</string>
+    <string name="widget_today">صلاتي • مواقيت اليوم</string>
+    <string name="widget_week">صلاتي • تقويم الأسبوع</string>
 </resources>

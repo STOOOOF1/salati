@@ -106,9 +106,7 @@ public class MainActivity extends Activity {
         tvPlace.setText(Prefs.placeName(this));
         tvClock.setText(now.format(CLOCK));
         tvAmPm.setText(now.getHour() < 12 ? "صباحًا" : "مساءً");
-        String hijri = DateFormat.getDateInstance(DateFormat.LONG,
-                new ULocale("ar_SA@calendar=islamic-umalqura")).format(new Date());
-        tvDate.setText(now.format(GREG) + "  •  " + hijri);
+        tvDate.setText(Dates.twoLines(now));
 
         float u = s.urgency();
         int c = Schedule.blend(colorNormal, colorRed, u);
