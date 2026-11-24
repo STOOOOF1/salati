@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_bg" android:orientation="vertical"
+    android:layoutDirection="rtl" android:padding="16dp" android:gravity="center_vertical">
+    <TextClock android:id="@+id/clock" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:format12Hour="h:mm a" android:format24Hour="HH:mm"
+        android:textColor="@color/text" android:textSize="40sp" android:textStyle="bold" />
+    <TextView android:id="@+id/date" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:textColor="@color/muted" android:textSize="13sp" android:maxLines="2" />
+    <TextView android:id="@+id/strip" android:layout_width="match_parent" android:layout_height="4dp"
+        android:layout_marginTop="4dp" android:layout_marginBottom="4dp" android:background="@color/accent" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/curLabel" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted"
+                android:textSize="15sp" android:maxLines="1" android:ellipsize="end" />
+            <Chronometer android:id="@+id/curChrono" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/text"
+                android:textSize="22sp" android:textStyle="bold" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/nextLabel" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted"
+                android:textSize="14sp" android:maxLines="1" android:ellipsize="end" />
+            <Chronometer android:id="@+id/nextChrono" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/text"
+                android:textSize="19sp" android:textStyle="bold" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/prevLabel" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted"
+                android:textSize="14sp" android:maxLines="1" android:ellipsize="end" />
+            <Chronometer android:id="@+id/prevChrono" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/text"
+                android:textSize="17sp"  />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/iqLabel" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted"
+                android:textSize="14sp" android:maxLines="1" android:ellipsize="end" />
+            <Chronometer android:id="@+id/iqChrono" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/text"
+                android:textSize="17sp"  />
+        </LinearLayout>
+    <TextView android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp" android:background="#33FFFFFF" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:paddingTop="3dp" android:paddingBottom="3dp">
+            <TextView android:id="@+id/n0" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+            <TextView android:id="@+id/t0" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:paddingTop="3dp" android:paddingBottom="3dp">
+            <TextView android:id="@+id/n1" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+            <TextView android:id="@+id/t1" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:paddingTop="3dp" android:paddingBottom="3dp">
+            <TextView android:id="@+id/n2" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+            <TextView android:id="@+id/t2" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:paddingTop="3dp" android:paddingBottom="3dp">
+            <TextView android:id="@+id/n3" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+            <TextView android:id="@+id/t3" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:paddingTop="3dp" android:paddingBottom="3dp">
+            <TextView android:id="@+id/n4" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+            <TextView android:id="@+id/t4" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:paddingTop="3dp" android:paddingBottom="3dp">
+            <TextView android:id="@+id/n5" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+            <TextView android:id="@+id/t5" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="14sp" />
+        </LinearLayout>
+</LinearLayout>
