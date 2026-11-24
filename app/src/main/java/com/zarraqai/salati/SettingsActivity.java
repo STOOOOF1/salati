@@ -26,7 +26,7 @@ import java.util.Locale;
 public class SettingsActivity extends Activity {
 
     private static final int REQ_LOC = 7;
-    private static final String[] IQ_LABELS = {"إقامة الفجر بعد الأذان (دقيقة)", "إقامة الظهر", "إقامة العصر", "إقامة المغرب", "إقامة العشاء"};
+    private static final String[] IQ_LABELS = {"الفجر", "الظهر", "العصر", "المغرب", "العشاء"};
 
     private Spinner spCity;
     private TextView tvLoc;
@@ -46,9 +46,18 @@ public class SettingsActivity extends Activity {
         root.setPadding(dp(20), dp(20), dp(20), dp(20));
         sv.addView(root);
 
-        root.addView(title("الموقع", text));
+        TextView head = new TextView(this);
+        head.setText("الإعدادات");
+        head.setTextColor(text);
+        head.setTextSize(26);
+        head.setTypeface(getResources().getFont(R.font.tajawal_extrabold));
+        root.addView(head);
+
+        LinearLayout locCard = card();
+        root.addView(locCard, cardLp());
+        locCard.addView(title("الموقع", text));
         tvLoc = label("", muted);
-        root.addView(tvLoc);
+        locCard.addView(tvLoc);
 
         String[] items = new String[Prefs.CITY_NAMES.length + 1];
         System.arraycopy(Prefs.CITY_NAMES, 0, items, 0, Prefs.CITY_NAMES.length);
@@ -72,30 +81,55 @@ public class SettingsActivity extends Activity {
             }
             @Override public void onNothingSelected(AdapterView<?> p) {}
         });
-        root.addView(spCity);
+        LinearLayout.LayoutParams spLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        spLp.topMargin = dp(10);
+        spCity.setBackgroundResource(R.drawable.input);
+        locCard.addView(spCity, spLp);
 
-        root.addView(title("الإقامة", text));
+        LinearLayout iqCard = card();
+        root.addView(iqCard, cardLp());
+        iqCard.addView(title("الإقامة بعد الأذان (بالدقائق)", text));
         int[] cur = Prefs.iqama(this);
         for (int i = 0; i < 5; i++) {
-            root.addView(label(IQ_LABELS[i], muted));
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setPadding(0, dp(6), 0, dp(6));
+            TextView l = label(IQ_LABELS[i], text);
+            l.setPadding(0, 0, 0, 0);
+            l.setTextSize(16);
+            row.addView(l, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
             iq[i] = number(cur[i], text);
-            root.addView(iq[i]);
+            row.addView(iq[i], new LinearLayout.LayoutParams(dp(84), dp(46)));
+            iqCard.addView(row);
         }
 
-        root.addView(title("التنبيه الأحمر", text));
-        root.addView(label("يبدأ اللون بالتحول إلى الأحمر قبل خروج وقت الصلاة بـ (دقيقة):", muted));
+        LinearLayout warnCard = card();
+        root.addView(warnCard, cardLp());
+        warnCard.addView(title("التنبيه الأحمر", text));
+        warnCard.addView(label("يبدأ اللون بالتحول إلى الأحمر قبل خروج وقت الصلاة بهذا العدد من الدقائق:", muted));
         etWarn = number(Prefs.warnMinutes(this), text);
-        root.addView(etWarn);
+        LinearLayout.LayoutParams wLp = new LinearLayout.LayoutParams(dp(84), dp(46));
+        wLp.topMargin = dp(10);
+        warnCard.addView(etWarn, wLp);
 
         Button save = new Button(this);
         save.setText("حفظ");
+        save.setTextColor(0xFF06231B);
+        save.setTextSize(17);
+        save.setTypeface(getResources().getFont(R.font.tajawal_bold));
+        save.setBackgroundResource(R.drawable.button);
+        save.setStateListAnimator(null);
         save.setOnClickListener(v -> save());
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.topMargin = dp(24);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(54));
+        lp.topMargin = dp(20);
         root.addView(save, lp);
 
-        root.addView(label("طريقة الحساب: أم القرى (الفجر 18.5°، العشاء بعد المغرب بـ90 دقيقة و120 في رمضان). "
-                + "نهاية الأوقات: الفجر حتى الشروق، والظهر حتى العصر، والعصر حتى المغرب، والمغرب حتى العشاء، والعشاء حتى منتصف الليل.", muted));
+        TextView note = label("طريقة الحساب: أم القرى (الفجر 18.5°، العشاء بعد المغرب بـ90 دقيقة و120 في رمضان). "
+                + "نهاية الأوقات: الفجر حتى الشروق، والظهر حتى العصر، والعصر حتى المغرب، والمغرب حتى العشاء، والعشاء حتى منتصف الليل.", muted);
+        note.setTextSize(12);
+        note.setPadding(dp(4), dp(18), dp(4), 0);
+        root.addView(note);
 
         setContentView(sv);
         showLoc();
@@ -177,9 +211,24 @@ public class SettingsActivity extends Activity {
         TextView t = new TextView(this);
         t.setText(s);
         t.setTextColor(color);
-        t.setTextSize(20);
-        t.setPadding(0, dp(20), 0, dp(6));
+        t.setTextSize(18);
+        t.setTypeface(getResources().getFont(R.font.tajawal_bold));
+        t.setPadding(0, 0, 0, dp(4));
         return t;
+    }
+
+    private LinearLayout card() {
+        LinearLayout l = new LinearLayout(this);
+        l.setOrientation(LinearLayout.VERTICAL);
+        l.setBackgroundResource(R.drawable.card);
+        l.setPadding(dp(18), dp(16), dp(18), dp(16));
+        return l;
+    }
+
+    private LinearLayout.LayoutParams cardLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(14);
+        return lp;
     }
 
     private TextView label(String s, int color) {
@@ -196,6 +245,10 @@ public class SettingsActivity extends Activity {
         e.setInputType(InputType.TYPE_CLASS_NUMBER);
         e.setText(String.valueOf(value));
         e.setTextColor(color);
+        e.setTextSize(18);
+        e.setGravity(android.view.Gravity.CENTER);
+        e.setTypeface(getResources().getFont(R.font.tajawal_bold));
+        e.setBackgroundResource(R.drawable.input);
         return e;
     }
 

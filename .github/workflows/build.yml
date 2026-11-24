@@ -14,6 +14,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get Tajawal font
+        run: |
+          mkdir -p app/src/main/res/font
+          for w in Regular Medium Bold ExtraBold; do
+            f=app/src/main/res/font/tajawal_$(echo $w | tr 'A-Z' 'a-z').ttf
+            [ -s "$f" ] || curl -fsSL -o "$f" "https://github.com/google/fonts/raw/main/ofl/tajawal/Tajawal-$w.ttf"
+          done
+          ls -l app/src/main/res/font
+
+      - name: Save font in repo
+        run: |
+          if [ -n "$(git status --porcelain app/src/main/res/font)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app/src/main/res/font
+            git commit -m "إضافة ملفات خط Tajawal [skip ci]"
+            git push
+          fi
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

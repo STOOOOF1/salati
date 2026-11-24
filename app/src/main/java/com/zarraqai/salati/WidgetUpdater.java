@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.icu.text.DateFormat;
 import android.icu.util.ULocale;
 import android.os.Build;
@@ -25,6 +26,7 @@ public final class WidgetUpdater {
     public static final String ACTION_UPDATE = "com.zarraqai.salati.UPDATE";
     private static final int[] N_IDS = {R.id.n0, R.id.n1, R.id.n2, R.id.n3, R.id.n4, R.id.n5};
     private static final int[] T_IDS = {R.id.t0, R.id.t1, R.id.t2, R.id.t3, R.id.t4, R.id.t5};
+    private static final int[] R_IDS = {R.id.r0, R.id.r1, R.id.r2, R.id.r3, R.id.r4, R.id.r5};
 
     private WidgetUpdater() {}
 
@@ -56,7 +58,10 @@ public final class WidgetUpdater {
         long nowMs = System.currentTimeMillis();
         long nowEl = SystemClock.elapsedRealtime();
 
-        // الوقت الحالي ولونه
+        int gold = c.getColor(R.color.gold);
+        boolean medium = size == 1;
+
+        // الوقت الحالي ولونه وشريط التقدم
         float u = s.urgency();
         int col = Schedule.blend(normal, red, u);
         if (s.current != null) {
@@ -64,31 +69,34 @@ public final class WidgetUpdater {
             countdown(v, R.id.curChrono, s.current.end, nowMs, nowEl);
             v.setTextColor(R.id.curChrono, col);
             v.setTextColor(R.id.curLabel, u > 0 ? col : muted);
-            v.setInt(R.id.strip, "setBackgroundColor", col);
+            v.setProgressBar(R.id.progress, 1000, (int) (s.currentProgress() * 1000), false);
+            if (Build.VERSION.SDK_INT >= 31) {
+                v.setColorStateList(R.id.progress, "setProgressTintList", ColorStateList.valueOf(col));
+            }
         } else {
-            v.setTextViewText(R.id.curLabel, "لا يوجد وقت قائم");
+            v.setTextViewText(R.id.curLabel, "لا يوجد وقت صلاة قائم");
             v.setChronometer(R.id.curChrono, nowEl, "", false);
             v.setTextViewText(R.id.curChrono, "");
             v.setTextColor(R.id.curLabel, muted);
-            v.setInt(R.id.strip, "setBackgroundColor", 0x33FFFFFF);
+            v.setProgressBar(R.id.progress, 1000, 0, false);
         }
 
-        v.setTextViewText(R.id.nextLabel, small ? s.next.name + " بعد" : "باقي على أذان " + s.next.name);
+        v.setTextViewText(R.id.nextLabel, medium ? "أذان " + s.next.name : "أذان " + s.next.name + " بعد");
         countdown(v, R.id.nextChrono, s.next.adhan, nowMs, nowEl);
 
-        v.setTextViewText(R.id.prevLabel, small ? "مضى " + s.previous.name : "مضى على أذان " + s.previous.name);
+        v.setTextViewText(R.id.prevLabel, small ? "مضى " + s.previous.name : "مضى على " + s.previous.name);
         long since = nowMs - s.previous.adhan.toInstant().toEpochMilli();
         v.setChronometer(R.id.prevChrono, nowEl - since, null, true);
         v.setChronometerCountDown(R.id.prevChrono, false);
 
-        v.setTextViewText(R.id.iqLabel, small ? "إقامة " + s.iqamaName : "باقي على إقامة " + s.iqamaName);
+        v.setTextViewText(R.id.iqLabel, "إقامة " + s.iqamaName);
         countdown(v, R.id.iqChrono, s.iqamaTarget, nowMs, nowEl);
-        v.setTextColor(R.id.iqChrono, s.iqamaIsForCurrent() ? normal : text);
+        v.setTextColor(R.id.iqChrono, s.iqamaIsForCurrent() ? gold : text);
 
         if (!small) {
             String hijri = DateFormat.getDateInstance(DateFormat.LONG,
                     new ULocale("ar_SA@calendar=islamic-umalqura")).format(new Date());
-            v.setTextViewText(R.id.date, Prefs.placeName(c) + " • " + hijri);
+            v.setTextViewText(R.id.date, medium ? hijri + "\n" + Prefs.placeName(c) : Prefs.placeName(c) + "  •  " + hijri);
         }
 
         if (size == 2) {
@@ -103,6 +111,7 @@ public final class WidgetUpdater {
                 v.setTextViewText(T_IDS[i], t.format(MainActivity.TIME));
                 v.setTextColor(N_IDS[i], cc);
                 v.setTextColor(T_IDS[i], cc);
+                v.setInt(R_IDS[i], "setBackgroundResource", (isCur || isNext) ? R.drawable.pill : 0);
             }
         }
 
