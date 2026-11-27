@@ -3,36 +3,50 @@ package com.zarraqai.salati;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.zarraqai.salati.core.PrayerCalc;
 import com.zarraqai.salati.core.Schedule;
 
-import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+/** الشاشة الرئيسية: الساعة منفردة، وصندوق الصلاة الحاضرة إذا دخل وقتها، ثم مواقيت اليوم. */
 public class MainActivity extends Activity {
 
     static final Locale AR = new Locale("ar");
     static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("h:mm a", AR);
-    static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("h:mm:ss", AR);
-    private static final DateTimeFormatter ROW_TIME = DateTimeFormatter.ofPattern("hh:mm", AR);
-    private static final String[] SIX = {"الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"};
+    private static final DateTimeFormatter HM = DateTimeFormatter.ofPattern("h:mm", Locale.US);
+    private static final DateTimeFormatter SEC = DateTimeFormatter.ofPattern("ss", Locale.US);
+    private static final DateTimeFormatter ROW_TIME = DateTimeFormatter.ofPattern("hh:mm", Locale.US);
+    private static final String[] ROWS = {"الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء", "منتصف الليل"};
+
+    // فتاوى الشيخ ابن باز رحمه الله (موقعه الرسمي)
+    private static final String RULE_MAIN = "«أما تأخير العصر إلى أن تصفر الشمس، أو العشاء إلى ما بعد نصف الليل، فهذا أمر لا يجوز مطلقًا»";
+    private static final String URL_MAIN = "https://binbaz.org.sa/fatwas/7404";
+    private static final String RULE_ASR = "«يصليها ولو بعد اصفرار الشمس، ويكون آثم إذا كان تعمد هذا، ولكن صلاتها في الوقت»";
+    private static final String RULE_ISHA = "«لو صلاها بعد نصف الليل تكون في الوقت، لكن مع الإثم، مع الإثم إذا أخرها عامدًا»";
+    private static final String URL_ASR = "https://binbaz.org.sa/fatwas/8293";
+    private static final String URL_ISHA = "https://binbaz.org.sa/fatwas/8795";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private TextView tvHijri, tvGreg, tvPlace, tvRingLabel, tvRingTime, tvPercent, tvWarn, tvNow;
-    private RingView ring;
+    private TextView tvHijri, tvGreg, tvPlace, tvClock, tvSec, tvAmPm, tvNext;
+    private View curBox, daruraBox, btnDone, doneRow;
+    private TextView curName, curChip, curTimes, curElapsed, curRemLabel, curRemaining, curIqama,
+            daruraTitle, daruraRule, daruraSource;
     private GradientBar bar;
-    private final LinearLayout[] rows = new LinearLayout[6];
-    private final TextView[] rowName = new TextView[6], rowNote = new TextView[6], rowTime = new TextView[6];
+    private final LinearLayout[] rows = new LinearLayout[7];
+    private final TextView[] rowName = new TextView[7], rowNote = new TextView[7], rowTime = new TextView[7];
     private int cGreen, cRed, cText, cMuted, cGold;
+    private String curKey, ruleUrl;
 
     private final Runnable tick = new Runnable() {
         @Override public void run() {
@@ -50,12 +64,24 @@ public class MainActivity extends Activity {
         tvHijri = findViewById(R.id.tvHijri);
         tvGreg = findViewById(R.id.tvGreg);
         tvPlace = findViewById(R.id.tvPlace);
-        tvRingLabel = findViewById(R.id.tvRingLabel);
-        tvRingTime = findViewById(R.id.tvRingTime);
-        tvPercent = findViewById(R.id.tvPercent);
-        tvWarn = findViewById(R.id.tvWarn);
-        tvNow = findViewById(R.id.tvNow);
-        ring = findViewById(R.id.ring);
+        tvClock = findViewById(R.id.tvClock);
+        tvSec = findViewById(R.id.tvSec);
+        tvAmPm = findViewById(R.id.tvAmPm);
+        tvNext = findViewById(R.id.tvNext);
+        curBox = findViewById(R.id.curBox);
+        curName = findViewById(R.id.curName);
+        curChip = findViewById(R.id.curChip);
+        curTimes = findViewById(R.id.curTimes);
+        curElapsed = findViewById(R.id.curElapsed);
+        curRemLabel = findViewById(R.id.curRemLabel);
+        curRemaining = findViewById(R.id.curRemaining);
+        curIqama = findViewById(R.id.curIqama);
+        daruraBox = findViewById(R.id.daruraBox);
+        daruraTitle = findViewById(R.id.daruraTitle);
+        daruraRule = findViewById(R.id.daruraRule);
+        daruraSource = findViewById(R.id.daruraSource);
+        btnDone = findViewById(R.id.btnDone);
+        doneRow = findViewById(R.id.doneRow);
         bar = findViewById(R.id.bar);
         cGreen = 0xFF34D399;
         cRed = 0xFFFF5A4E;
@@ -63,11 +89,23 @@ public class MainActivity extends Activity {
         cMuted = 0xFFB8C4C2;
         cGold = getColor(R.color.gold);
         buildRows();
-        fitInsetsAndRing();
+
+        View content = findViewById(R.id.content);
+        View nav = findViewById(R.id.navBar);
+        Insets.on(content, (top, bottom) -> {
+            content.setPadding(0, top, 0, 0);
+            nav.setPadding(0, 0, 0, bottom);
+        });
 
         findViewById(R.id.navHome).setOnClickListener(v -> ((android.widget.ScrollView) findViewById(R.id.scroll)).smoothScrollTo(0, 0));
         findViewById(R.id.navSettings).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         findViewById(R.id.placeBox).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
+        btnDone.setOnClickListener(v -> { if (curKey != null) { DoneReceiver.mark(this, curKey, true); render(); } });
+        findViewById(R.id.btnUndo).setOnClickListener(v -> { if (curKey != null) { DoneReceiver.mark(this, curKey, false); render(); } });
+        daruraSource.setOnClickListener(v -> {
+            if (ruleUrl == null) return;
+            try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(ruleUrl))); } catch (Exception ignored) {}
+        });
     }
 
     @Override
@@ -87,43 +125,20 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(tick);
     }
 
-    /** يُبعد المحتوى عن أشرطة النظام، ويضبط عرض محتوى الحلقة ليتسع داخلها في كل الشاشات. */
-    private void fitInsetsAndRing() {
-        android.view.View content = findViewById(R.id.content);
-        android.view.View nav = findViewById(R.id.navBar);
-        Insets.on(content, (top, bottom) -> {
-            content.setPadding(0, top, 0, 0);
-            nav.setPadding(0, 0, 0, bottom);
-        });
-        tvRingTime.setAutoSizeTextTypeUniformWithConfiguration(26, 46, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
-        ring.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            int w = r - l;
-            if (w <= 0) return;
-            float d = getResources().getDisplayMetrics().density;
-            int inner = (int) (w - 2 * 24 * d - 2 * 14 * d); // قطر الدائرة الداخلية
-            int target = (int) (inner * 0.74f);
-            android.view.View box = findViewById(R.id.ringInner);
-            if (box.getLayoutParams().width != target) {
-                box.getLayoutParams().width = target;
-                box.post(box::requestLayout);
-            }
-        });
-    }
-
     private void buildRows() {
         LinearLayout box = findViewById(R.id.timesBox);
         Typeface bold = getResources().getFont(R.font.tajawal_extrabold);
         Typeface med = getResources().getFont(R.font.tajawal_medium);
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 7; i++) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(18), dp(14), dp(18), dp(14));
+            row.setPadding(dp(16), dp(11), dp(16), dp(11));
             row.setBackgroundResource(R.drawable.row_card);
 
             TextView n = new TextView(this);
             n.setTypeface(bold);
-            n.setTextSize(20);
+            n.setTextSize(17);
             n.setTextColor(cText);
             TextView note = new TextView(this);
             note.setTypeface(med);
@@ -133,20 +148,21 @@ public class MainActivity extends Activity {
             note.setPadding(dp(10), 0, dp(8), 0);
             TextView t = new TextView(this);
             t.setTypeface(bold);
-            t.setTextSize(20);
+            t.setTextSize(17);
             t.setTextColor(cText);
 
             row.addView(n, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             row.addView(note, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
             row.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.topMargin = dp(10);
+            lp.topMargin = dp(8);
             box.addView(row, lp);
             rows[i] = row; rowName[i] = n; rowNote[i] = note; rowTime[i] = t;
         }
     }
 
     private static String ampm(ZonedDateTime t) { return t.getHour() < 12 ? "ص" : "م"; }
+    private static String hm(ZonedDateTime t) { return t.format(HM) + " " + ampm(t); }
 
     private void render() {
         Schedule s = Prefs.schedule(this);
@@ -155,83 +171,109 @@ public class MainActivity extends Activity {
         tvHijri.setText(Dates.day(now) + "، " + Dates.hijri(now));
         tvGreg.setText(Dates.greg(now));
         tvPlace.setText(Prefs.placeName(this));
-        tvNow.setText("الوقت الحالي " + now.format(CLOCK) + " " + ampm(now));
+        tvClock.setText(now.format(HM));
+        tvSec.setText(now.format(SEC));
+        tvAmPm.setText(ampm(now));
 
         float u = s.urgency();
-        if (s.current != null) {
-            float prog = s.currentProgress();
-            boolean darura = s.inDarura();
-            boolean hasDarura = s.current.choiceEnd.isBefore(s.current.end);
-            tvRingLabel.setText(darura ? "وقت الضرورة • باقي على خروج " + s.current.name + ":"
-                    : (hasDarura ? "باقي من وقت اختيار " : "باقي على خروج وقت ") + s.current.name + ":");
-            tvRingTime.setText(hms(s.currentRemaining()));
-            ring.set(prog, true);
-            bar.set(prog, true);
-            tvPercent.setText((darura ? "انتهى وقت الاختيار" : "مضى " + Math.round(prog * 100) + "%")
-                    + " • منذ الأذان " + Schedule.fmt(s.sincePrevious()));
-            String madh = "المذهب " + Schedule.MADHHABS[s.madhhab];
-            if (darura) {
-                tvWarn.setText("أنت في وقت الضرورة (" + madh + ") • ينتهي " + s.current.end.format(TIME));
-                tvWarn.setTextColor(cRed);
-            } else if (u > 0) {
-                tvWarn.setText("الوقت المتبقي يوشك على النهاية"
-                        + (hasDarura ? " (ثم وقت الضرورة حتى " + s.current.end.format(TIME) + ")" : ""));
-                tvWarn.setTextColor(cRed);
-            } else {
-                tvWarn.setText((hasDarura ? "الاختيار حتى " + s.current.choiceEnd.format(TIME) + " • الضرورة حتى "
-                        : "ينتهي وقت " + s.current.name + " ") + s.current.end.format(TIME));
-                tvWarn.setTextColor(cMuted);
-            }
-            tvRingTime.setTextColor(Schedule.blend(cText, cRed, u));
-        } else {
-            double total = Duration.between(s.previous.adhan, s.next.adhan).getSeconds();
-            float prog = (float) Math.max(0, Math.min(1, Duration.between(s.previous.adhan, now).getSeconds() / total));
-            tvRingLabel.setText("باقي على أذان " + s.next.name + ":");
-            tvRingTime.setText(hms(s.untilNext()));
-            tvRingTime.setTextColor(cText);
-            ring.set(prog, false);
-            bar.set(prog, false);
-            tvPercent.setText("مضى على أذان " + s.previous.name + " " + Schedule.fmt(s.sincePrevious()));
-            tvWarn.setText("الأذان " + s.next.adhan.format(TIME) + " • الإقامة بعده بـ" + s.iqamaMinutesNext() + " د");
-            tvWarn.setTextColor(cMuted);
-        }
+        Schedule.Prayer cur = s.current;
+        if (cur != null) renderCurrent(s, cur, u);
+        else { curBox.setVisibility(View.GONE); curKey = null; }
+
+        boolean tomorrow = !s.next.adhan.toLocalDate().equals(now.toLocalDate());
+        tvNext.setText("الصلاة القادمة: " + s.next.name + (tomorrow ? " غدًا " : " ") + hm(s.next.adhan)
+                + " • بعد " + Schedule.fmt(s.untilNext()));
 
         renderRows(s, u);
     }
 
+    private void renderCurrent(Schedule s, Schedule.Prayer cur, float u) {
+        curBox.setVisibility(View.VISIBLE);
+        curKey = Schedule.key(cur);
+        boolean darura = s.inDarura();
+        boolean hasDarura = Schedule.hasDarura(cur);
+
+        curName.setText("صلاة " + cur.name);
+        if (darura) { curChip.setText("وقت الضرورة"); curChip.setTextColor(cRed); }
+        else if (u > 0) { curChip.setText("يوشك على الخروج"); curChip.setTextColor(cRed); }
+        else { curChip.setText("الوقت الحاضر"); curChip.setTextColor(cGreen); }
+        curBox.setBackgroundResource(u > 0 ? R.drawable.row_card_warn : R.drawable.row_card_cur);
+
+        curTimes.setText(hasDarura
+                ? "الأذان " + hm(cur.adhan) + " • الاختيار حتى " + hm(cur.choiceEnd) + "\nالضرورة حتى " + hm(cur.end)
+                : "الأذان " + hm(cur.adhan) + " • ينتهي " + hm(cur.end));
+        curElapsed.setText(Schedule.fmt(s.sincePrevious()));
+        curRemLabel.setText(darura || !hasDarura ? "باقي على خروج الوقت" : "باقي من وقت الاختيار");
+        curRemaining.setText(Schedule.fmt(s.currentRemaining()));
+        curRemaining.setTextColor(Schedule.blend(cText, cRed, u));
+        bar.set(s.currentProgress(), true);
+
+        if (s.iqamaActive()) {
+            curIqama.setVisibility(View.VISIBLE);
+            curIqama.setText("الإقامة بعد " + Schedule.fmt(s.untilIqama()));
+        } else curIqama.setVisibility(View.GONE);
+
+        // وقت الضرورة: تنبيه بلون أحمر مع حكم التأخير
+        if (hasDarura && (darura || u > 0)) {
+            daruraBox.setVisibility(View.VISIBLE);
+            boolean isha = cur.index == PrayerCalc.ISHA;
+            daruraTitle.setText(darura
+                    ? "دخل وقت الضرورة لصلاة " + cur.name + "، فبادر بها"
+                    : "يقترب وقت الضرورة لصلاة " + cur.name + " (" + hm(cur.choiceEnd) + ")");
+            daruraRule.setText(darura ? RULE_MAIN + "\n" + (isha ? RULE_ISHA : RULE_ASR) : RULE_MAIN);
+            ruleUrl = darura ? (isha ? URL_ISHA : URL_ASR) : URL_MAIN;
+            daruraSource.setText("— الشيخ عبدالعزيز بن باز رحمه الله • اضغط لقراءة الفتوى");
+        } else if (u > 0) {
+            daruraBox.setVisibility(View.VISIBLE);
+            daruraTitle.setText("يوشك وقت " + cur.name + " على الخروج (" + hm(cur.end) + ")");
+            daruraRule.setText("بادر بالصلاة قبل خروج وقتها.");
+            daruraSource.setText("");
+            ruleUrl = null;
+        } else {
+            daruraBox.setVisibility(View.GONE);
+            ruleUrl = null;
+        }
+
+        boolean done = Prefs.isDone(this, curKey);
+        doneRow.setVisibility(done ? View.VISIBLE : View.GONE);
+        btnDone.setVisibility(!done && Prefs.canMarkDone(this, cur) ? View.VISIBLE : View.GONE);
+        if (done) {
+            daruraBox.setVisibility(View.GONE);
+            curChip.setText("أُدّيت");
+            curChip.setTextColor(cGreen);
+            curBox.setBackgroundResource(R.drawable.row_card_cur);
+        }
+    }
+
     private void renderRows(Schedule s, float u) {
         boolean nextIsTomorrowFajr = s.next.index == PrayerCalc.FAJR && !s.next.adhan.toLocalDate().equals(s.now.toLocalDate());
-        for (int i = 0; i < 6; i++) {
-            ZonedDateTime t = s.today[i];
+        ZonedDateTime mid = s.midnight();
+        for (int i = 0; i < 7; i++) {
+            ZonedDateTime t = i < 6 ? s.today[i] : mid;
+            if (t == null) { rows[i].setVisibility(View.GONE); continue; }
+            rows[i].setVisibility(View.VISIBLE);
             if (i == PrayerCalc.FAJR && nextIsTomorrowFajr) t = s.next.adhan;
-            String name = SIX[i];
+            String name = ROWS[i];
             if (i == PrayerCalc.DHUHR && t.getDayOfWeek() == java.time.DayOfWeek.FRIDAY) name = "الجمعة";
-            boolean isCur = s.current != null && i == s.current.index && t.equals(s.current.adhan);
-            boolean isNext = t.equals(s.next.adhan);
+            boolean isCur = i < 6 && s.current != null && i == s.current.index && t.equals(s.current.adhan);
+            boolean isNext = i < 6 && t.equals(s.next.adhan);
 
             rowName[i].setText(name);
             rowTime[i].setText(t.format(ROW_TIME) + " " + ampm(t));
-            rowName[i].setTextColor(cText);
-            rowTime[i].setTextColor(cText);
+            rowName[i].setTextColor(i == 6 ? cMuted : cText);
+            rowTime[i].setTextColor(i == 6 ? cMuted : cText);
 
             String note = "";
             int noteColor = cMuted;
             int bg = R.drawable.row_card;
-            if (isCur) {
-                if (s.iqamaActive()) {
-                    note = "الإقامة بعد " + Schedule.fmt(s.untilIqama());
-                    noteColor = cGold;
-                } else if (s.inDarura()) {
-                    note = "وقت الضرورة - المذهب " + Schedule.MADHHABS[s.madhhab];
-                    noteColor = cRed;
-                } else if (u > 0) {
-                    note = "أوشكت على النهاية - المذهب " + Schedule.MADHHABS[s.madhhab];
-                    noteColor = cRed;
-                } else {
-                    note = "الوقت الحالي";
-                    noteColor = cGreen;
-                }
-                bg = u > 0 ? R.drawable.row_card_warn : R.drawable.row_card_cur;
+            if (i == 6) {
+                note = "نهاية اختيار العشاء";
+            } else if (isCur) {
+                if (Prefs.isDone(this, Schedule.key(s.current))) { note = "أُدّيت ✓"; noteColor = cGreen; }
+                else if (s.inDarura()) { note = "وقت الضرورة"; noteColor = cRed; }
+                else if (u > 0) { note = "يوشك"; noteColor = cRed; }
+                else { note = "الآن"; noteColor = cGreen; }
+                bg = u > 0 && !Prefs.isDone(this, Schedule.key(s.current)) ? R.drawable.row_card_warn : R.drawable.row_card_cur;
             } else if (isNext) {
                 note = (nextIsTomorrowFajr ? "غدًا • " : "") + "بعد " + Schedule.fmt(s.untilNext());
                 noteColor = cGold;
@@ -244,12 +286,6 @@ public class MainActivity extends Activity {
             rowNote[i].setTextColor(noteColor);
             rows[i].setBackgroundResource(bg);
         }
-    }
-
-    /** دائمًا بصيغة 00:00:00 كما في التصميم. */
-    private static String hms(Duration d) {
-        long sec = Math.max(0, d.getSeconds());
-        return String.format(Locale.US, "%02d:%02d:%02d", sec / 3600, (sec % 3600) / 60, sec % 60);
     }
 
     private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }

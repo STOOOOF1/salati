@@ -81,16 +81,66 @@ public final class Prefs {
     public static long lastUpdateCheck(Context c) { return sp(c).getLong("upd_check", 0); }
     public static void setLastUpdateCheck(Context c, long t) { sp(c).edit().putLong("upd_check", t).apply(); }
 
-    public static int madhhab(Context c) { return sp(c).getInt("madhhab", Schedule.HANBALI); }
-    public static void setMadhhab(Context c, int m) { sp(c).edit().putInt("madhhab", m).apply(); }
+    // ---------- مستوى المتابعة لكل صلاة ----------
+    public static int level(Context c, int slot) { return sp(c).getInt("lvl_" + slot, com.zarraqai.salati.core.AlertPlan.LIGHT); }
+    public static void setLevel(Context c, int slot, int v) { sp(c).edit().putInt("lvl_" + slot, v).apply(); }
+    /** يصلي في البيت (لا تنبيه للإقامة). */
+    public static boolean atHome(Context c, int slot) { return sp(c).getBoolean("home_" + slot, false); }
+    public static void setAtHome(Context c, int slot, boolean v) { sp(c).edit().putBoolean("home_" + slot, v).apply(); }
+    /** المنبّه الذكي: مفعّل دائمًا للفجر، واختياري لغيره (افتراضيًا للعصر في المستوى المكثّف). */
+    public static boolean smart(Context c, int slot) {
+        if (slot == 0) return true;
+        return sp(c).getBoolean("smart_" + slot, slot == 2 && level(c, slot) == com.zarraqai.salati.core.AlertPlan.INTENSE);
+    }
+    public static void setSmart(Context c, int slot, boolean v) { sp(c).edit().putBoolean("smart_" + slot, v).apply(); }
+
+    // ---------- «صلّيت» والاستيقاظ (محليًا على الجهاز) ----------
+    public static boolean isDone(Context c, String key) { return sp(c).getLong("done_" + key, 0) > 0; }
+    public static void setDone(Context c, String key, boolean v) {
+        if (v) sp(c).edit().putLong("done_" + key, System.currentTimeMillis()).apply();
+        else sp(c).edit().remove("done_" + key).apply();
+    }
+    public static boolean woke(Context c, String key) { return sp(c).getBoolean("woke_" + key, false); }
+    public static void setWoke(Context c, String key, boolean v) { sp(c).edit().putBoolean("woke_" + key, v).apply(); }
+
+    /** زر «صلّيت» لا يظهر في فجر المستوى المكثّف إلا بعد اجتياز تحدي الاستيقاظ. */
+    public static boolean canMarkDone(Context c, Schedule.Prayer p) {
+        int slot = Schedule.slot(p.index);
+        if (slot == 0 && level(c, 0) == com.zarraqai.salati.core.AlertPlan.INTENSE && alerts(c)[0]) return woke(c, Schedule.key(p));
+        return true;
+    }
+
+    // ---------- رمز الاستيقاظ ----------
+    public static String wakeCode(Context c) { return sp(c).getString("wake_code", null); }
+    public static void setWakeCode(Context c, String v) {
+        if (v == null) sp(c).edit().remove("wake_code").putBoolean("wake_strict", false).apply();
+        else sp(c).edit().putString("wake_code", v).apply();
+    }
+    public static boolean wakeStrict(Context c) { return sp(c).getBoolean("wake_strict", false) && wakeCode(c) != null; }
+    public static void setWakeStrict(Context c, boolean v) { sp(c).edit().putBoolean("wake_strict", v).apply(); }
+
+    // ---------- تنبيه إضافي واحد (تكرار أو سؤال متابعة) ----------
+    public static void setExtra(Context c, long at, int type, int strength, int slot, String key, String name, int rep) {
+        sp(c).edit().putLong("x_at", at).putInt("x_type", type).putInt("x_str", strength).putInt("x_slot", slot)
+                .putString("x_key", key).putString("x_name", name).putInt("x_rep", rep).apply();
+    }
+    public static void clearExtra(Context c) { sp(c).edit().remove("x_at").apply(); }
+    public static long extraAt(Context c) { return sp(c).getLong("x_at", 0); }
+    public static int extraType(Context c) { return sp(c).getInt("x_type", 0); }
+    public static int extraStrength(Context c) { return sp(c).getInt("x_str", 1); }
+    public static int extraSlot(Context c) { return sp(c).getInt("x_slot", 0); }
+    public static String extraKey(Context c) { return sp(c).getString("x_key", ""); }
+    public static String extraName(Context c) { return sp(c).getString("x_name", ""); }
+    public static int extraRep(Context c) { return sp(c).getInt("x_rep", 0); }
+
+    /** آخر تنبيه أُطلق، حتى لا يتكرر نفسه. */
+    public static long lastFired(Context c) { return sp(c).getLong("last_fired", 0); }
+    public static void setLastFired(Context c, long t) { sp(c).edit().putLong("last_fired", t).apply(); }
 
     public static int warnMinutes(Context c) { return sp(c).getInt("warn", 30); }
 
-    public static void save(Context c, int[] iqama, int warn) {
-        SharedPreferences.Editor e = sp(c).edit();
-        for (int i = 0; i < 5; i++) e.putInt(IQAMA_KEYS[i], iqama[i]);
-        e.putInt("warn", warn).apply();
-    }
+    public static void setIqama(Context c, int slot, int v) { sp(c).edit().putInt(IQAMA_KEYS[slot], v).apply(); }
+    public static void setWarn(Context c, int v) { sp(c).edit().putInt("warn", v).apply(); }
 
     /** رمضان حسب تقويم أم القرى. */
     public static boolean isRamadan(LocalDate d) {
@@ -105,6 +155,6 @@ public final class Prefs {
     }
 
     public static Schedule schedule(Context c) {
-        return Schedule.at(ZonedDateTime.now(), lat(c), lng(c), iqama(c), warnMinutes(c), Prefs::isRamadan, madhhab(c));
+        return Schedule.at(ZonedDateTime.now(), lat(c), lng(c), iqama(c), warnMinutes(c), Prefs::isRamadan);
     }
 }
