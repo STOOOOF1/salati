@@ -2,7 +2,7 @@ name: بناء APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
   workflow_dispatch:
 
 permissions:
@@ -24,6 +24,7 @@ jobs:
           ls -l app/src/main/res/font
 
       - name: Save font in repo
+        if: github.ref == 'refs/heads/main'
         run: |
           if [ -n "$(git status --porcelain app/src/main/res/font)" ]; then
             git config user.name "github-actions[bot]"
@@ -74,6 +75,7 @@ jobs:
             version.json
 
       - name: Publish release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest

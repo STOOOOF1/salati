@@ -240,8 +240,7 @@ public final class WidgetUpdater {
         DateTimeFormatter dayF = DateTimeFormatter.ofPattern("EEEE", new Locale("ar"));
         for (int d = 0; d < 7; d++) {
             LocalDate day = s.now.toLocalDate().plusDays(d);
-            ZonedDateTime[] t = PrayerCalc.compute(day, lat, lng, s.now.getZone(), Prefs.isRamadan(day),
-                    s.madhhab == Schedule.HANAFI ? 2 : 1);
+            ZonedDateTime[] t = PrayerCalc.compute(day, lat, lng, s.now.getZone(), Prefs.isRamadan(day), 1);
             ZonedDateTime noon = day.atTime(12, 0).atZone(s.now.getZone());
             boolean today = d == 0;
             v.setTextViewText(WidgetIds.WEEK_DAY[d], today ? "اليوم" : noon.format(dayF));

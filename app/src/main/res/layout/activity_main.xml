@@ -26,136 +26,328 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingStart="22dp"
-                android:paddingTop="26dp"
+                android:paddingTop="22dp"
                 android:paddingEnd="22dp"
                 android:paddingBottom="20dp">
 
                 <TextView
                     android:id="@+id/tvHijri"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/tajawal_extrabold"
+                    android:maxLines="1"
                     android:textColor="@color/text"
-                    android:textSize="24sp" />
-
-                <TextView
-                    android:id="@+id/tvGreg"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:fontFamily="@font/tajawal_medium"
-                    android:textColor="#CCFFFFFF"
-                    android:textSize="15sp" />
+                    android:textSize="20sp" />
 
                 <LinearLayout
                     android:id="@+id/placeBox"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="4dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
+                    <TextView
+                        android:id="@+id/tvGreg"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/tajawal_medium"
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="14sp" />
+
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="12dp"
                         android:src="@drawable/ic_pin" />
 
                     <TextView
                         android:id="@+id/tvPlace"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
+                        android:layout_marginStart="4dp"
                         android:fontFamily="@font/tajawal_medium"
+                        android:maxLines="1"
                         android:textColor="@color/text"
-                        android:textSize="18sp" />
+                        android:textSize="14sp" />
                 </LinearLayout>
 
-                <FrameLayout
+                <!-- الساعة منفردة -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp">
+                    android:layout_marginTop="28dp"
+                    android:layout_marginBottom="20dp"
+                    android:gravity="center"
+                    android:layoutDirection="ltr"
+                    android:orientation="horizontal">
 
-                    <com.zarraqai.salati.RingView
-                        android:id="@+id/ring"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
+                    <TextView
+                        android:id="@+id/tvClock"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/tajawal_extrabold"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="@color/text"
+                        android:textSize="78sp" />
 
                     <LinearLayout
-                        android:id="@+id/ringInner"
-                        android:layout_width="220dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:gravity="center_horizontal"
+                        android:layout_marginStart="8dp"
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/tvRingLabel"
-                            android:layout_width="match_parent"
-                            android:gravity="center"
-                            android:maxLines="2"
+                            android:id="@+id/tvSec"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/tajawal_bold"
+                            android:includeFontPadding="false"
+                            android:textColor="@color/muted"
+                            android:textSize="24sp" />
+
+                        <TextView
+                            android:id="@+id/tvAmPm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/tajawal_bold"
+                            android:includeFontPadding="false"
+                            android:textColor="@color/muted"
+                            android:textSize="22sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- صندوق الصلاة الحالية -->
+                <LinearLayout
+                    android:id="@+id/curBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/row_card_cur"
+                    android:orientation="vertical"
+                    android:padding="18dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/curName"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/tajawal_extrabold"
                             android:textColor="@color/text"
+                            android:textSize="24sp" />
+
+                        <TextView
+                            android:id="@+id/curChip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/pill"
+                            android:fontFamily="@font/tajawal_bold"
+                            android:maxLines="1"
+                            android:paddingStart="12dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="4dp"
+                            android:textColor="@color/text"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/curTimes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="@font/tajawal_medium"
+                        android:textColor="@color/muted"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/tajawal_medium"
+                                android:text="مضى من الوقت"
+                                android:textColor="@color/muted"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/curElapsed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/tajawal_extrabold"
+                                android:includeFontPadding="false"
+                                android:textColor="@color/text"
+                                android:textSize="30sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/curRemLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/tajawal_medium"
+                                android:textColor="@color/muted"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/curRemaining"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/tajawal_extrabold"
+                                android:includeFontPadding="false"
+                                android:textColor="@color/text"
+                                android:textSize="30sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <com.zarraqai.salati.GradientBar
+                        android:id="@+id/bar"
+                        android:layout_width="match_parent"
+                        android:layout_height="10dp"
+                        android:layout_marginTop="12dp" />
+
+                    <TextView
+                        android:id="@+id/curIqama"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:fontFamily="@font/tajawal_bold"
+                        android:textColor="@color/gold"
+                        android:textSize="15sp"
+                        android:visibility="gone" />
+
+                    <!-- تنبيه وقت الضرورة وحكم التأخير -->
+                    <LinearLayout
+                        android:id="@+id/daruraBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/row_card_warn"
+                        android:orientation="vertical"
+                        android:padding="14dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/daruraTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/tajawal_extrabold"
+                            android:textColor="#FFFF6B5E"
                             android:textSize="16sp" />
 
                         <TextView
-                            android:id="@+id/tvRingTime"
+                            android:id="@+id/daruraRule"
                             android:layout_width="match_parent"
-                            android:gravity="center"
-                            android:maxLines="1"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:fontFamily="@font/tajawal_extrabold"
-                            android:includeFontPadding="false"
-                            android:textColor="@color/text"
-                            android:textSize="46sp" />
-
-                        <com.zarraqai.salati.GradientBar
-                            android:id="@+id/bar"
-                            android:layout_width="match_parent"
-                            android:layout_height="9dp"
-                            android:layout_marginTop="10dp" />
-
-                        <TextView
-                            android:id="@+id/tvPercent"
-                            android:layout_width="match_parent"
-                            android:gravity="center"
-                            android:maxLines="1"
-                            android:ellipsize="end"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_marginTop="6dp"
                             android:fontFamily="@font/tajawal_medium"
+                            android:lineSpacingExtra="3dp"
                             android:textColor="@color/text"
-                            android:textSize="12sp" />
+                            android:textSize="14sp" />
 
                         <TextView
-                            android:id="@+id/tvWarn"
+                            android:id="@+id/daruraSource"
                             android:layout_width="match_parent"
-                            android:maxLines="2"
-                            android:ellipsize="end"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:fontFamily="@font/tajawal_medium"
-                            android:gravity="center"
-                            android:textColor="@color/muted"
-                            android:textSize="12sp" />
+                            android:layout_marginTop="6dp"
+                            android:fontFamily="@font/tajawal_bold"
+                            android:textColor="@color/accent"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnDone"
+                        android:layout_width="match_parent"
+                        android:layout_height="54dp"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/button"
+                        android:fontFamily="@font/tajawal_bold"
+                        android:stateListAnimator="@null"
+                        android:text="صلّيت ✓"
+                        android:textColor="#FF06231B"
+                        android:textSize="18sp" />
+
+                    <LinearLayout
+                        android:id="@+id/doneRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
 
                         <TextView
-                            android:id="@+id/tvNow"
+                            android:id="@+id/doneText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/tajawal_bold"
+                            android:text="أدّيتَ الصلاة • تقبّل الله"
+                            android:textColor="@color/accent"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/btnUndo"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:background="?android:attr/selectableItemBackground"
                             android:fontFamily="@font/tajawal_bold"
-                            android:textColor="#D9FFFFFF"
-                            android:textSize="15sp" />
+                            android:padding="8dp"
+                            android:text="تراجع"
+                            android:textColor="@color/muted"
+                            android:textSize="14sp" />
                     </LinearLayout>
-                </FrameLayout>
+                </LinearLayout>
+
+                <!-- الصلاة القادمة -->
+                <TextView
+                    android:id="@+id/tvNext"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/row_card_next"
+                    android:fontFamily="@font/tajawal_bold"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:textColor="@color/text"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:fontFamily="@font/tajawal_bold"
+                    android:text="مواقيت اليوم"
+                    android:textColor="@color/muted"
+                    android:textSize="14sp" />
 
                 <LinearLayout
                     android:id="@+id/timesBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
                     android:orientation="vertical" />
             </LinearLayout>
         </ScrollView>
