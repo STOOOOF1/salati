@@ -335,7 +335,7 @@ public class SettingsActivity extends Activity {
             boolean[] v = Prefs.alerts(this);
             v[slot] = c;
             Prefs.setAlerts(this, v);
-            opts.setVisibility(c ? View.VISIBLE : View.GONE);
+            opts.setAlpha(c ? 1f : 0.45f);
             AlertScheduler.reschedule(this);
             if (c && Build.VERSION.SDK_INT >= 33
                     && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -365,7 +365,8 @@ public class SettingsActivity extends Activity {
         smart.setOnCheckedChangeListener((b, c) -> { Prefs.setSmart(this, slot, c); AlertScheduler.reschedule(this); });
         opts.addView(smart);
 
-        opts.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        // تظهر الخيارات دائمًا (باهتة إن كان التنبيه موقوفًا) حتى يعرف المستخدم مكانها
+        opts.setAlpha(enabled ? 1f : 0.45f);
         box.addView(opts);
         return box;
     }
