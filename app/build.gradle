@@ -10,23 +10,22 @@ android {
         applicationId 'com.zarraqai.salati'
         minSdk 26
         targetSdk 35
-        versionCode 10
-        versionName '2.0.1'
+        versionCode 11
+        versionName '2.0.2'
     }
 
-    // مفتاح توقيع ثابت من أسرار GitHub (SALATI_KEYSTORE_B64 و SALATI_KEY_PASS) حتى تعمل التحديثات
-    // فوق النسخة المثبتة. إن لم يتوفر يُستعمل مفتاح التصحيح المؤقت.
-    def ksPath = System.getenv('SALATI_KEYSTORE')
-    def hasKey = ksPath != null && new File(ksPath).exists()
+    // مفتاح توقيع ثابت محفوظ في المستودع (app/salati.jks) حتى تعمل التحديثات فوق النسخة المثبتة.
+    // يمكن استبداله بمفتاح من أسرار GitHub (SALATI_KEYSTORE و SALATI_KEY_PASS).
+    def envKs = System.getenv('SALATI_KEYSTORE')
+    def useEnv = envKs != null && new File(envKs).exists()
+    def hasKey = true
 
     signingConfigs {
-        if (hasKey) {
-            salati {
-                storeFile file(ksPath)
-                storePassword System.getenv('SALATI_KEY_PASS')
-                keyAlias 'salati'
-                keyPassword System.getenv('SALATI_KEY_PASS')
-            }
+        salati {
+            storeFile useEnv ? file(envKs) : file('salati.jks')
+            storePassword useEnv ? System.getenv('SALATI_KEY_PASS') : 'salati-app-key'
+            keyAlias 'salati'
+            keyPassword useEnv ? System.getenv('SALATI_KEY_PASS') : 'salati-app-key'
         }
     }
 
