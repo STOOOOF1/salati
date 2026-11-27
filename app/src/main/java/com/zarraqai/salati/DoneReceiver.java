@@ -11,6 +11,7 @@ import android.content.Intent;
 public class DoneReceiver extends BroadcastReceiver {
 
     static final String ACTION = "com.zarraqai.salati.DONE";
+    static final String ACTION_STOP = "com.zarraqai.salati.STOP_SOUND";
     static final int UNDO_ID = 79;
 
     static PendingIntent pending(Context c, String key, String name, boolean done) {
@@ -21,6 +22,7 @@ public class DoneReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context c, Intent i) {
+        if (ACTION_STOP.equals(i.getAction())) { AdhanService.stopByUser(c); return; }
         String key = i.getStringExtra("key");
         String name = i.getStringExtra("name");
         boolean done = i.getBooleanExtra("done", true);

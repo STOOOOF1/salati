@@ -46,6 +46,8 @@ public class AdhanService extends Service {
 
     /** التنبيه الجاري الآن (لتعرضه شاشة التنبيه)، أو null. */
     static volatile Intent current;
+    private static volatile AdhanService instance;
+    private static final long MAX_TONE_MS = 60_000L, MAX_TEST_MS = 20_000L;
 
     private MediaPlayer player;
     private PowerManager.WakeLock wake;
@@ -81,7 +83,19 @@ public class AdhanService extends Service {
 
     /** إيقاف بيد المستخدم (زر، أو حل التحدي). */
     static void stopByUser(Context c) {
+        AdhanService s = instance;
+        if (s != null) {
+            // الخدمة في العملية نفسها: نوقفها مباشرة دون الاعتماد على تشغيل خدمة من الخلفية
+            s.handler.post(() -> { s.userActed = true; s.finish(); });
+            return;
+        }
         try { c.startService(new Intent(c, AdhanService.class).setAction(ACTION_STOP)); } catch (Exception ignored) {}
+    }
+
+    /** هل يرنّ الآن تنبيه يتوقف بأي زر (غير المنبّه الذكي)؟ */
+    static boolean ringingStoppable() {
+        AdhanService s = instance;
+        return s != null && s.alert != null && s.strength < AlertPlan.S_SMART;
     }
 
     /** لم يجب على سؤال «هل أنت مستيقظ؟»: يعود المنبّه بأعلى صوت. */
@@ -171,7 +185,12 @@ public class AdhanService extends Service {
         }
         if (intent == null) { stopSelf(); return START_NOT_STICKY; }
 
-        if (alert != null) stopPlayer(); // تنبيه جديد يحل محل السابق
+        if (alert != null) { // تنبيه جديد يحل محل السابق
+            handler.removeCallbacksAndMessages(null);
+            stopPlayer();
+            unlisten();
+        }
+        instance = this;
         alert = new Intent(intent);
         test = intent.getBooleanExtra("test", false);
         strength = intent.getIntExtra(AlertScheduler.EXTRA_STRENGTH, AlertPlan.S_NORMAL);
@@ -204,7 +223,7 @@ public class AdhanService extends Service {
             play(uri);
         }
         if (strength >= AlertPlan.S_STRONG) vibrate(true);
-        if (strength < AlertPlan.S_SMART && !test) listenForAnyButton();
+        if (strength < AlertPlan.S_SMART) listenForAnyButton();
         scheduleStages();
         return START_NOT_STICKY;
     }
@@ -227,8 +246,8 @@ public class AdhanService extends Service {
                     .setContentIntent(screen)
                     .setFullScreenIntent(screen, true);
         } else {
-            Intent stop = new Intent(this, AdhanService.class).setAction(ACTION_STOP);
-            PendingIntent stopPi = PendingIntent.getService(this, 4, stop, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            Intent stop = new Intent(this, DoneReceiver.class).setAction(DoneReceiver.ACTION_STOP);
+            PendingIntent stopPi = PendingIntent.getBroadcast(this, 4, stop, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             b.setContentText(Prefs.placeName(this) + " • أي زر يوقف الصوت")
                     .setContentIntent(strength == AlertPlan.S_STRONG ? alarmScreen(this, ChallengeActivity.MODE_STOP) : openApp(this))
                     .setDeleteIntent(stopPi)
@@ -266,11 +285,13 @@ public class AdhanService extends Service {
                 handler.postDelayed(() -> { setVolume(1f); maxAlarmVolume(); }, 60_000L);
                 handler.postDelayed(this::noResponse, MAX_SMART_MS);
             }
-        } else if (strength == AlertPlan.S_STRONG) {
+        } else if (strength == AlertPlan.S_STRONG && !test) {
             handler.postDelayed(() -> setVolume(1f), 20_000L);
             handler.postDelayed(this::noResponse, MAX_STRONG_MS);
         } else {
-            handler.postDelayed(this::noResponse, MAX_NORMAL_MS);
+            // الأذان من ملف يكتمل، أما النغمات فبعضها يتكرر من تلقاء نفسه فنحدّها بدقيقة
+            boolean adhanFile = Prefs.soundMode(this) == Prefs.SOUND_ADHAN && Prefs.adhanUri(this) != null;
+            handler.postDelayed(this::noResponse, test ? MAX_TEST_MS : (adhanFile ? MAX_NORMAL_MS : MAX_TONE_MS));
         }
     }
 
@@ -409,6 +430,7 @@ public class AdhanService extends Service {
         boolean showReminder = a != null && !test && type != AlertPlan.T_CHECK;
         current = null;
         alert = null;
+        if (instance == this) instance = null;
         if (wake != null && wake.isHeld()) wake.release();
         wake = null;
         stopForeground(STOP_FOREGROUND_REMOVE);
@@ -440,6 +462,7 @@ public class AdhanService extends Service {
         unlisten();
         if (wake != null && wake.isHeld()) wake.release();
         current = null;
+        if (instance == this) instance = null;
         super.onDestroy();
     }
 
