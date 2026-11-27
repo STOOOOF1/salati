@@ -111,6 +111,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        // فتح التطبيق يعني أن المستخدم انتبه: نوقف التنبيه العادي (لا الذكي)
+        if (AdhanService.ringingStoppable()) AdhanService.stopByUser(this);
         handler.post(tick);
         WidgetUpdater.updateAll(this);
         AlertScheduler.reschedule(this);
